@@ -36,6 +36,7 @@ namespace EmployeeManagementSystem
             this.label4 = new System.Windows.Forms.Label();
             this.logout_btn = new System.Windows.Forms.Button();
             this.pro_btn = new System.Windows.Forms.Button();
+            this.Gantt_btn = new System.Windows.Forms.Button();
             this.account_btn = new System.Windows.Forms.Button();
             this.taskassignment_btn = new System.Windows.Forms.Button();
             this.Task_btn = new System.Windows.Forms.Button();
@@ -43,6 +44,7 @@ namespace EmployeeManagementSystem
             this.greet_user = new System.Windows.Forms.Label();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.panel3 = new System.Windows.Forms.Panel();
+            this.gantt1 = new EmployeeManagementSystem.Gantt();
             this.taskAssignment1 = new EmployeeManagementSystem.TaskAssignment();
             this.project2 = new EmployeeManagementSystem.Project();
             this.account2 = new EmployeeManagementSystem.Account();
@@ -99,6 +101,7 @@ namespace EmployeeManagementSystem
             this.panel2.Controls.Add(this.label4);
             this.panel2.Controls.Add(this.logout_btn);
             this.panel2.Controls.Add(this.pro_btn);
+            this.panel2.Controls.Add(this.Gantt_btn);
             this.panel2.Controls.Add(this.account_btn);
             this.panel2.Controls.Add(this.taskassignment_btn);
             this.panel2.Controls.Add(this.Task_btn);
@@ -154,7 +157,7 @@ namespace EmployeeManagementSystem
             this.pro_btn.ForeColor = System.Drawing.Color.White;
             this.pro_btn.Image = global::EmployeeManagementSystem.Properties.Resources.icons8_Salary_male_30px;
             this.pro_btn.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.pro_btn.Location = new System.Drawing.Point(14, 310);
+            this.pro_btn.Location = new System.Drawing.Point(14, 266);
             this.pro_btn.Margin = new System.Windows.Forms.Padding(4);
             this.pro_btn.Name = "pro_btn";
             this.pro_btn.Size = new System.Drawing.Size(267, 49);
@@ -162,6 +165,27 @@ namespace EmployeeManagementSystem
             this.pro_btn.Text = "Project";
             this.pro_btn.UseVisualStyleBackColor = false;
             this.pro_btn.Click += new System.EventHandler(this.pro_btn_Click);
+            // 
+            // Gantt_btn
+            // 
+            this.Gantt_btn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(11)))), ((int)(((byte)(97)))));
+            this.Gantt_btn.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.Gantt_btn.FlatAppearance.CheckedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(75)))), ((int)(((byte)(8)))), ((int)(((byte)(138)))));
+            this.Gantt_btn.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(75)))), ((int)(((byte)(8)))), ((int)(((byte)(138)))));
+            this.Gantt_btn.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(75)))), ((int)(((byte)(8)))), ((int)(((byte)(138)))));
+            this.Gantt_btn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.Gantt_btn.Font = new System.Drawing.Font("Arial Rounded MT Bold", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.Gantt_btn.ForeColor = System.Drawing.Color.White;
+            this.Gantt_btn.Image = global::EmployeeManagementSystem.Properties.Resources.icons8_Salary_male_30px;
+            this.Gantt_btn.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.Gantt_btn.Location = new System.Drawing.Point(15, 569);
+            this.Gantt_btn.Margin = new System.Windows.Forms.Padding(4);
+            this.Gantt_btn.Name = "Gantt_btn";
+            this.Gantt_btn.Size = new System.Drawing.Size(267, 49);
+            this.Gantt_btn.TabIndex = 4;
+            this.Gantt_btn.Text = "Gantt Chart";
+            this.Gantt_btn.UseVisualStyleBackColor = false;
+            this.Gantt_btn.Click += new System.EventHandler(this.gantt_btn_Click);
             // 
             // account_btn
             // 
@@ -175,12 +199,12 @@ namespace EmployeeManagementSystem
             this.account_btn.ForeColor = System.Drawing.Color.White;
             this.account_btn.Image = global::EmployeeManagementSystem.Properties.Resources.icons8_Salary_male_30px;
             this.account_btn.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.account_btn.Location = new System.Drawing.Point(15, 543);
+            this.account_btn.Location = new System.Drawing.Point(15, 499);
             this.account_btn.Margin = new System.Windows.Forms.Padding(4);
             this.account_btn.Name = "account_btn";
             this.account_btn.Size = new System.Drawing.Size(267, 49);
             this.account_btn.TabIndex = 4;
-            this.account_btn.Text = "account";
+            this.account_btn.Text = "Account";
             this.account_btn.UseVisualStyleBackColor = false;
             this.account_btn.Click += new System.EventHandler(this.account_btn_Click);
             // 
@@ -196,7 +220,7 @@ namespace EmployeeManagementSystem
             this.taskassignment_btn.ForeColor = System.Drawing.Color.White;
             this.taskassignment_btn.Image = global::EmployeeManagementSystem.Properties.Resources.icons8_Salary_male_30px;
             this.taskassignment_btn.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.taskassignment_btn.Location = new System.Drawing.Point(14, 464);
+            this.taskassignment_btn.Location = new System.Drawing.Point(14, 420);
             this.taskassignment_btn.Margin = new System.Windows.Forms.Padding(4);
             this.taskassignment_btn.Name = "taskassignment_btn";
             this.taskassignment_btn.Size = new System.Drawing.Size(267, 49);
@@ -217,7 +241,7 @@ namespace EmployeeManagementSystem
             this.Task_btn.ForeColor = System.Drawing.Color.White;
             this.Task_btn.Image = global::EmployeeManagementSystem.Properties.Resources.icons8_Salary_male_30px;
             this.Task_btn.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.Task_btn.Location = new System.Drawing.Point(14, 386);
+            this.Task_btn.Location = new System.Drawing.Point(14, 342);
             this.Task_btn.Margin = new System.Windows.Forms.Padding(4);
             this.Task_btn.Name = "Task_btn";
             this.Task_btn.Size = new System.Drawing.Size(267, 49);
@@ -238,7 +262,7 @@ namespace EmployeeManagementSystem
             this.addEmployee_btn.ForeColor = System.Drawing.Color.White;
             this.addEmployee_btn.Image = global::EmployeeManagementSystem.Properties.Resources.icons8_employee_card_30px;
             this.addEmployee_btn.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.addEmployee_btn.Location = new System.Drawing.Point(14, 233);
+            this.addEmployee_btn.Location = new System.Drawing.Point(14, 189);
             this.addEmployee_btn.Margin = new System.Windows.Forms.Padding(4);
             this.addEmployee_btn.Name = "addEmployee_btn";
             this.addEmployee_btn.Size = new System.Drawing.Size(267, 49);
@@ -252,7 +276,7 @@ namespace EmployeeManagementSystem
             this.greet_user.AutoSize = true;
             this.greet_user.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.greet_user.ForeColor = System.Drawing.Color.White;
-            this.greet_user.Location = new System.Drawing.Point(73, 183);
+            this.greet_user.Location = new System.Drawing.Point(65, 146);
             this.greet_user.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.greet_user.Name = "greet_user";
             this.greet_user.Size = new System.Drawing.Size(144, 24);
@@ -262,7 +286,7 @@ namespace EmployeeManagementSystem
             // pictureBox1
             // 
             this.pictureBox1.Image = global::EmployeeManagementSystem.Properties.Resources.icons8_employee_card_100px;
-            this.pictureBox1.Location = new System.Drawing.Point(83, 55);
+            this.pictureBox1.Location = new System.Drawing.Point(75, 18);
             this.pictureBox1.Margin = new System.Windows.Forms.Padding(4);
             this.pictureBox1.Name = "pictureBox1";
             this.pictureBox1.Size = new System.Drawing.Size(133, 123);
@@ -276,12 +300,20 @@ namespace EmployeeManagementSystem
             this.panel3.Controls.Add(this.account2);
             this.panel3.Controls.Add(this.task1);
             this.panel3.Controls.Add(this.addEmployee1);
+            this.panel3.Controls.Add(this.gantt1);
             this.panel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel3.Location = new System.Drawing.Point(300, 43);
             this.panel3.Margin = new System.Windows.Forms.Padding(4);
             this.panel3.Name = "panel3";
             this.panel3.Size = new System.Drawing.Size(1167, 695);
             this.panel3.TabIndex = 2;
+            // 
+            // gantt1
+            // 
+            this.gantt1.Location = new System.Drawing.Point(0, 0);
+            this.gantt1.Name = "gantt1";
+            this.gantt1.Size = new System.Drawing.Size(1167, 695);
+            this.gantt1.TabIndex = 6;
             // 
             // taskAssignment1
             // 
@@ -367,5 +399,7 @@ namespace EmployeeManagementSystem
         private Project project2;
         private Account account2;
         private Task task1;
+        private System.Windows.Forms.Button Gantt_btn;
+        private Gantt gantt1;
     }
 }

@@ -29,7 +29,7 @@ namespace EmployeeManagementSystem
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             this.TaskStatus_cmb = new System.Windows.Forms.ComboBox();
             this.label7 = new System.Windows.Forms.Label();
             this.Clear_btn = new System.Windows.Forms.Button();
@@ -56,6 +56,8 @@ namespace EmployeeManagementSystem
             this.StartDate_dtp = new System.Windows.Forms.DateTimePicker();
             this.AssigneeID_txt = new System.Windows.Forms.TextBox();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.CP_txt = new System.Windows.Forms.TextBox();
+            this.label10 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.Task_dtg)).BeginInit();
             this.panel3.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -258,14 +260,14 @@ namespace EmployeeManagementSystem
             // 
             this.Task_dtg.AllowUserToAddRows = false;
             this.Task_dtg.AllowUserToDeleteRows = false;
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(11)))), ((int)(((byte)(97)))));
-            dataGridViewCellStyle2.Font = new System.Drawing.Font("Arial Rounded MT Bold", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle2.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.Task_dtg.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(11)))), ((int)(((byte)(97)))));
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Arial Rounded MT Bold", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.Task_dtg.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.Task_dtg.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.Task_dtg.EnableHeadersVisualStyles = false;
             this.Task_dtg.Location = new System.Drawing.Point(29, 73);
@@ -301,6 +303,8 @@ namespace EmployeeManagementSystem
             // 
             this.panel3.BackColor = System.Drawing.SystemColors.ButtonHighlight;
             this.panel3.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panel3.Controls.Add(this.CP_txt);
+            this.panel3.Controls.Add(this.label10);
             this.panel3.Controls.Add(this.TaskDescription_txt);
             this.panel3.Controls.Add(this.label9);
             this.panel3.Controls.Add(this.label8);
@@ -395,6 +399,26 @@ namespace EmployeeManagementSystem
             this.panel1.Size = new System.Drawing.Size(1118, 343);
             this.panel1.TabIndex = 3;
             // 
+            // CP_txt
+            // 
+            this.CP_txt.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.CP_txt.Location = new System.Drawing.Point(927, 137);
+            this.CP_txt.Margin = new System.Windows.Forms.Padding(4);
+            this.CP_txt.Name = "CP_txt";
+            this.CP_txt.Size = new System.Drawing.Size(175, 24);
+            this.CP_txt.TabIndex = 26;
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label10.Location = new System.Drawing.Point(752, 137);
+            this.label10.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(167, 18);
+            this.label10.TabIndex = 25;
+            this.label10.Text = "Completion Percentage:";
+            // 
             // Task
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
@@ -441,5 +465,7 @@ namespace EmployeeManagementSystem
         private System.Windows.Forms.DateTimePicker EndDate_dtp;
         private System.Windows.Forms.DateTimePicker StartDate_dtp;
         private System.Windows.Forms.TextBox TaskDescription_txt;
+        private System.Windows.Forms.TextBox CP_txt;
+        private System.Windows.Forms.Label label10;
     }
 }
