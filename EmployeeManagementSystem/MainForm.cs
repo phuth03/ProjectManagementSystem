@@ -49,6 +49,7 @@ namespace EmployeeManagementSystem
             project2.Hide();
             account2.Hide();
             taskAssignment1.Hide();
+            gantt1.Hide();
         }
 
         private void addEmployee_btn_Click(object sender, EventArgs e)
@@ -129,6 +130,12 @@ namespace EmployeeManagementSystem
             HideUserControls();
             account2.Show();
 
+        }
+
+        private void gantt_btn_Click(object sender, EventArgs e)
+        {
+            HideUserControls();
+            gantt1.Show();
         }
     }
 }

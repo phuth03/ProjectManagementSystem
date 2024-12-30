@@ -34,7 +34,7 @@
             this.label1 = new System.Windows.Forms.Label();
             this.panel2 = new System.Windows.Forms.Panel();
             this.label8 = new System.Windows.Forms.Label();
-            this.AssignmentDate_txt = new System.Windows.Forms.DateTimePicker();
+            this.AssignedDate_txt = new System.Windows.Forms.DateTimePicker();
             this.panel3 = new System.Windows.Forms.Panel();
             this.Status_txt = new System.Windows.Forms.ComboBox();
             this.label7 = new System.Windows.Forms.Label();
@@ -121,19 +121,19 @@
             this.label8.TabIndex = 23;
             this.label8.Text = "Assignment Date:";
             // 
-            // AssignmentDate_txt
+            // AssignedDate_txt
             // 
-            this.AssignmentDate_txt.Location = new System.Drawing.Point(896, 43);
-            this.AssignmentDate_txt.Name = "AssignmentDate_txt";
-            this.AssignmentDate_txt.Size = new System.Drawing.Size(223, 22);
-            this.AssignmentDate_txt.TabIndex = 21;
+            this.AssignedDate_txt.Location = new System.Drawing.Point(896, 43);
+            this.AssignedDate_txt.Name = "AssignedDate_txt";
+            this.AssignedDate_txt.Size = new System.Drawing.Size(223, 22);
+            this.AssignedDate_txt.TabIndex = 21;
             // 
             // panel3
             // 
             this.panel3.BackColor = System.Drawing.SystemColors.ButtonHighlight;
             this.panel3.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.panel3.Controls.Add(this.label8);
-            this.panel3.Controls.Add(this.AssignmentDate_txt);
+            this.panel3.Controls.Add(this.AssignedDate_txt);
             this.panel3.Controls.Add(this.Status_txt);
             this.panel3.Controls.Add(this.label7);
             this.panel3.Controls.Add(this.Clear_btn);
@@ -197,6 +197,7 @@
             this.Clear_btn.TabIndex = 17;
             this.Clear_btn.Text = "Clear";
             this.Clear_btn.UseVisualStyleBackColor = false;
+            this.Clear_btn.Click += new System.EventHandler(this.Clear_btn_Click);
             // 
             // Delete_btn
             // 
@@ -216,6 +217,7 @@
             this.Delete_btn.TabIndex = 16;
             this.Delete_btn.Text = "Delete";
             this.Delete_btn.UseVisualStyleBackColor = false;
+            this.Delete_btn.Click += new System.EventHandler(this.Delete_btn_Click);
             // 
             // Update_btn
             // 
@@ -235,6 +237,7 @@
             this.Update_btn.TabIndex = 15;
             this.Update_btn.Text = "Update";
             this.Update_btn.UseVisualStyleBackColor = false;
+            this.Update_btn.Click += new System.EventHandler(this.Update_btn_Click);
             // 
             // Add_btn
             // 
@@ -254,6 +257,7 @@
             this.Add_btn.TabIndex = 14;
             this.Add_btn.Text = "Add";
             this.Add_btn.UseVisualStyleBackColor = false;
+            this.Add_btn.Click += new System.EventHandler(this.Add_btn_Click);
             // 
             // EmployeeID_txt
             // 
@@ -332,6 +336,7 @@
             this.Controls.Add(this.panel3);
             this.Name = "TaskAssignment";
             this.Size = new System.Drawing.Size(1167, 695);
+            this.Load += new System.EventHandler(this.TaskAssignment_Load);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.Task_dtg)).EndInit();
@@ -348,7 +353,7 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.Label label8;
-        private System.Windows.Forms.DateTimePicker AssignmentDate_txt;
+        private System.Windows.Forms.DateTimePicker AssignedDate_txt;
         private System.Windows.Forms.Panel panel3;
         private System.Windows.Forms.ComboBox Status_txt;
         private System.Windows.Forms.Label label7;

@@ -36,40 +36,45 @@ namespace EmployeeManagementSystem
 
                 // Add insert command
                 adapter.InsertCommand = new OracleCommand(
-                    @"INSERT INTO Tasks (TaskID, TaskName, ProjectID, AssigneeID, TaskStatus, 
-                      Description, StartDate, EndDate) 
-                      VALUES (:taskId, :taskName, :projectId, :assigneeID, :taskStatus, 
-                      :taskDescription, :startDate, :endDate)", conn);
+                    @"INSERT INTO Tasks (TaskID, TaskName, TaskDescription, ProjectID, AssigneeID, Status, 
+                       StartDate, EndDate, CompletionPercentage) 
+                      VALUES (:taskId, :taskName, :taskDescription, :projectId, :assigneeID, :status, 
+                       :startDate, :endDate, :completionPercentage)", conn);
 
                 adapter.InsertCommand.Parameters.Add(":taskId", OracleDbType.Varchar2, 20, "TaskID");
                 adapter.InsertCommand.Parameters.Add(":taskName", OracleDbType.Varchar2, 100, "TaskName");
+                adapter.InsertCommand.Parameters.Add(":taskDescription", OracleDbType.Varchar2, 500, "TaskDescription");
                 adapter.InsertCommand.Parameters.Add(":projectId", OracleDbType.Varchar2, 20, "ProjectID");
                 adapter.InsertCommand.Parameters.Add(":assigneeID", OracleDbType.Varchar2, 20, "AssigneeID");
-                adapter.InsertCommand.Parameters.Add(":taskStatus", OracleDbType.Varchar2, 20, "TaskStatus");
-                adapter.InsertCommand.Parameters.Add(":taskDescription", OracleDbType.Varchar2, 500, "TaskDescription");
+                adapter.InsertCommand.Parameters.Add(":Status", OracleDbType.Varchar2, 20, "Status");
                 adapter.InsertCommand.Parameters.Add(":startDate", OracleDbType.Date, 0, "StartDate");
                 adapter.InsertCommand.Parameters.Add(":endDate", OracleDbType.Date, 0, "EndDate");
+                adapter.InsertCommand.Parameters.Add(":completionPercentage", OracleDbType.Varchar2, 20, "CompletionPercentage");
+
 
                 // Add update command
                 adapter.UpdateCommand = new OracleCommand(
                     @"UPDATE Tasks SET 
                       TaskName = :taskName,
+                      TaskDescription = :taskDescription,
                       ProjectID = :projectId,
                       AssigneeID = :assigneeID,
-                      TaskStatus = :taskStatus,
-                      TaskDescription = :taskDescription,
+                      Status = :status,
                       StartDate = :startDate,
-                      EndDate = :endDate
+                      EndDate = :endDate,
+                      CompletionPercentage = :completionPercentage
                       WHERE TaskID = :taskId", conn);
 
                 adapter.UpdateCommand.Parameters.Add(":taskName", OracleDbType.Varchar2, 100, "TaskName");
+                adapter.UpdateCommand.Parameters.Add(":taskDescription", OracleDbType.Varchar2, 500, "TaskDescription");
                 adapter.UpdateCommand.Parameters.Add(":projectId", OracleDbType.Varchar2, 20, "ProjectID");
                 adapter.UpdateCommand.Parameters.Add(":assigneeID", OracleDbType.Varchar2, 20, "AssigneeID");
-                adapter.UpdateCommand.Parameters.Add(":taskStatus", OracleDbType.Varchar2, 20, "TaskStatus");
-                adapter.UpdateCommand.Parameters.Add(":taskDescription", OracleDbType.Varchar2, 500, "TaskDescription");
+                adapter.UpdateCommand.Parameters.Add(":status", OracleDbType.Varchar2, 20, "Status");
                 adapter.UpdateCommand.Parameters.Add(":startDate", OracleDbType.Date, 0, "StartDate");
                 adapter.UpdateCommand.Parameters.Add(":endDate", OracleDbType.Date, 0, "EndDate");
                 adapter.UpdateCommand.Parameters.Add(":taskId", OracleDbType.Varchar2, 20, "TaskID");
+                adapter.UpdateCommand.Parameters.Add(":completionPercentage", OracleDbType.Varchar2, 20, "CompletionPercentage");
+
 
                 // Add delete command
                 adapter.DeleteCommand = new OracleCommand(
@@ -105,36 +110,39 @@ namespace EmployeeManagementSystem
             {
                 if (ValidateInput())
                 {
+                    conn.Open(); // Open the connection
                     using (OracleTransaction transaction = conn.BeginTransaction())
                     {
                         try
                         {
-                            // 1. Thêm Task mới
+                            // 1. Add Task
                             DataRow newRow = taskTable.NewRow();
                             newRow["TaskID"] = TaskID_txt.Text;
                             newRow["TaskName"] = TaskName_txt.Text;
                             newRow["TaskDescription"] = TaskDescription_txt.Text;
                             newRow["ProjectID"] = ProjectID_txt.Text;
                             newRow["AssigneeID"] = AssigneeID_txt.Text;
-                            newRow["TaskStatus"] = TaskStatus_cmb.SelectedItem.ToString();
+                            newRow["Status"] = TaskStatus_cmb.SelectedItem.ToString();
                             newRow["StartDate"] = StartDate_dtp.Value;
                             newRow["EndDate"] = EndDate_dtp.Value;
+                            newRow["CompletionPercentage"] = CP_txt.Text;
+
 
                             taskTable.Rows.Add(newRow);
                             adapter.Update(taskTable);
 
-                            // 2. Thêm TaskAssignment tương ứng
+                            // 2. Add TaskAssignment
                             using (OracleCommand cmd = new OracleCommand(@"
-                                INSERT INTO TaskAssignments (
-                                    TaskID,
-                                    AssigneeID
-                                ) VALUES (
-                                    :taskID,
-                                    :assigneeID
-                                )", conn))
+                        INSERT INTO TaskAssignments (
+                            TaskID,
+                            AssignmentID
+                        ) VALUES (
+                            :taskID,
+                            :assignmentID
+                        )", conn))
                             {
-                                cmd.Parameters.Add(":taskId", OracleDbType.Varchar2).Value = TaskID_txt.Text;
-                                cmd.Parameters.Add(":assigneeID", OracleDbType.Varchar2).Value = AssigneeID_txt.Text;
+                                cmd.Parameters.Add(":taskID", OracleDbType.Varchar2).Value = TaskID_txt.Text;
+                                cmd.Parameters.Add(":assignmentID", OracleDbType.Varchar2).Value = AssigneeID_txt.Text;
 
                                 cmd.Transaction = transaction;
                                 cmd.ExecuteNonQuery();
@@ -157,6 +165,11 @@ namespace EmployeeManagementSystem
             {
                 MessageBox.Show("Error adding task: " + ex.Message);
             }
+            finally
+            {
+                if (conn.State == ConnectionState.Open)
+                    conn.Close(); // Ensure the connection is closed
+            }
         }
 
 
@@ -166,6 +179,7 @@ namespace EmployeeManagementSystem
             {
                 if (ValidateInput())
                 {
+                    conn.Open();
                     using (OracleTransaction transaction = conn.BeginTransaction())
                     {
                         try
@@ -180,18 +194,20 @@ namespace EmployeeManagementSystem
                                 row["TaskDescription"] = TaskDescription_txt.Text;
                                 row["ProjectID"] = ProjectID_txt.Text;
                                 row["AssigneeID"] = AssigneeID_txt.Text;
-                                row["TaskStatus"] = TaskStatus_cmb.SelectedItem.ToString();
+                                row["Status"] = TaskStatus_cmb.SelectedItem.ToString();
                                 row["StartDate"] = StartDate_dtp.Value;
                                 row["EndDate"] = EndDate_dtp.Value;
+                                row["CompletionPercentage"] = CP_txt.Text;
+
 
                                 adapter.Update(taskTable);
                             }
 
                             // 2. Update the TaskAssignments table
                             using (OracleCommand updateAssignmentCmd = new OracleCommand(
-                                "UPDATE TaskAssignments SET AssigneeID = :assigneeID WHERE TaskID = :taskId", conn))
+                                "UPDATE TaskAssignments SET AssignmentID = :assignmentID WHERE TaskID = :taskId", conn))
                             {
-                                updateAssignmentCmd.Parameters.Add(":assigneeID", OracleDbType.Varchar2).Value = AssigneeID_txt.Text;
+                                updateAssignmentCmd.Parameters.Add(":assignmentID", OracleDbType.Varchar2).Value = AssigneeID_txt.Text;
                                 updateAssignmentCmd.Parameters.Add(":taskId", OracleDbType.Varchar2).Value = TaskID_txt.Text;
 
                                 updateAssignmentCmd.Transaction = transaction;
@@ -214,6 +230,11 @@ namespace EmployeeManagementSystem
             catch (Exception ex)
             {
                 MessageBox.Show("Error updating task: " + ex.Message);
+            }
+            finally
+            {
+                if (conn.State == ConnectionState.Open)
+                    conn.Close(); // Ensure the connection is closed
             }
         }
 
@@ -287,9 +308,11 @@ namespace EmployeeManagementSystem
                 TaskDescription_txt.Text = row.Cells["TaskDescription"].Value.ToString();
                 ProjectID_txt.Text = row.Cells["ProjectID"].Value.ToString();
                 AssigneeID_txt.Text = row.Cells["AssigneeID"].Value.ToString();
-                TaskStatus_cmb.SelectedItem = row.Cells["TaskStatus"].Value.ToString();
+                TaskStatus_cmb.SelectedItem = row.Cells["Status"].Value.ToString();
                 StartDate_dtp.Value = Convert.ToDateTime(row.Cells["StartDate"].Value);
                 EndDate_dtp.Value = Convert.ToDateTime(row.Cells["EndDate"].Value);
+                CP_txt.Text = row.Cells["CompletionPercentage"].Value.ToString();
+
             }
         }
 
@@ -303,6 +326,8 @@ namespace EmployeeManagementSystem
             TaskStatus_cmb.SelectedIndex = -1;
             StartDate_dtp.Value = DateTime.Now;
             EndDate_dtp.Value = DateTime.Now;
+            CP_txt.Clear();
+
         }
 
         private bool ValidateInput()
