@@ -1,109 +1,109 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using Oracle.ManagedDataAccess.Client;
 using System.Data;
-using System.Data.SqlClient;
 
 namespace EmployeeManagementSystem
 {
     public partial class Form1 : Form
     {
-        SqlConnection connect
-            = new SqlConnection(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\WINDOWS 10\Documents\employee.mdf;Integrated Security=True;Connect Timeout=30");
+        // Database connection string
+        private string connectionString = "Data Source=localhost:1521/XE;User Id=projectman;Password=Phu123;";
+        OracleConnection conn;
         public Form1()
         {
             InitializeComponent();
         }
 
-        private void label5_Click(object sender, EventArgs e)
-        {
-
-        }
-
         private void Form1_Load(object sender, EventArgs e)
         {
-
-        }
-
-        private void exit_Click(object sender, EventArgs e)
-        {
-            Application.Exit();
-        }
-
-        private void login_signupBtn_Click(object sender, EventArgs e)
-        {
-            RegisterForm regForm = new RegisterForm();
-            regForm.Show();
-            this.Hide();
+            // Initialize form settings
+            login_password.PasswordChar = '*';
         }
 
         private void login_showPass_CheckedChanged(object sender, EventArgs e)
         {
+            // Toggle password visibility
             login_password.PasswordChar = login_showPass.Checked ? '\0' : '*';
         }
 
         private void login_btn_Click(object sender, EventArgs e)
         {
-            if(login_username.Text == ""
-                || login_password.Text == "")
+            string username = login_username.Text.Trim();
+            string password = login_password.Text.Trim();
+
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
             {
-                MessageBox.Show("Please fill all blank fields"
-                    , "Error Message", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Please enter both username and password", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
-            else
+
+            try
             {
-                if(connect.State == ConnectionState.Closed)
+                using ( conn = new OracleConnection(connectionString))
                 {
-                    try
+                    conn.Open();
+                    using (OracleCommand cmd = new OracleCommand("SELECT ACCOUNTID, USERNAME, ROLE FROM ACCOUNTS WHERE USERNAME = :username AND PASSWORDHASH = :password", conn))
                     {
-                        connect.Open();
+                        cmd.Parameters.Add(":username", OracleDbType.Varchar2).Value = username;
+                        cmd.Parameters.Add(":password", OracleDbType.Varchar2).Value = password;
 
-                        string selectData = "SELECT * FROM users WHERE username = @username " +
-                            "AND password = @password";
-
-                        using(SqlCommand cmd = new SqlCommand(selectData, connect))
+                        using (OracleDataReader reader = cmd.ExecuteReader())
                         {
-                            cmd.Parameters.AddWithValue("@username", login_username.Text.Trim());
-                            cmd.Parameters.AddWithValue("@password", login_password.Text.Trim());
-
-                            SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                            DataTable table = new DataTable();
-                            adapter.Fill(table);
-
-                            if(table.Rows.Count >= 1)
+                            if (reader.Read())
                             {
-                                MessageBox.Show("Login successfully!"
-                                    , "Information Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                // Login successful
+                                int accountId = reader.GetInt32(0);
+                                string role = reader.GetString(2);
 
-                                MainForm mForm = new MainForm();
-                                mForm.Show();
+                                // Store user information if needed
+                                // You can create a static class to store current user info
+
+                                // Show main form
+                                MainForm mainForm = new MainForm();
                                 this.Hide();
+                                mainForm.ShowDialog();
+                                this.Close();
                             }
                             else
                             {
-                                MessageBox.Show("Incorrect Username/Password"
-                                    , "Error Message", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                MessageBox.Show("Invalid username or password", "Login Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             }
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show("Error: " + ex
-                        , "Error Message", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                    finally
-                    {
-                        connect.Close();
-                    }
                 }
-                
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Database error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                conn.Close();
+            }
+        }
+
+        private void Register_lbl_Click(object sender, EventArgs e)
+        {
+            ShowRegisterForm();
+        }
+
+        private void login_signupBtn_Click(object sender, EventArgs e)
+        {
+            ShowRegisterForm();
+        }
+
+        private void ShowRegisterForm()
+        {
+            RegisterForm registerForm = new RegisterForm();
+            this.Hide();
+            registerForm.ShowDialog();
+            this.Show();
+        }
+
+        private void exit_Click(object sender, EventArgs e)
+        {
+            Application.Exit();
         }
     }
 }

@@ -7,19 +7,14 @@ namespace EmployeeManagementSystem
 {
     public partial class Task : UserControl
     {
-        private string connectionString = "Data Source=localhost:1521/XE;User Id=projectman;Password=Phu123;";
-        private OracleConnection conn;
-        private OracleDataAdapter adapter;
-        private DataTable taskTable;
+        private readonly string connectionString = "Data Source=localhost:1521/XE;User Id=projectman;Password=Phu123;";
 
         public Task()
         {
             InitializeComponent();
-            conn = new OracleConnection(connectionString);
-            InitializeDataComponents();
-            LoadTaskData();
+            LoadData();
 
-            // Add event handlers
+            // Wire up event handlers
             Add_btn.Click += Add_btn_Click;
             Update_btn.Click += Update_btn_Click;
             Delete_btn.Click += Delete_btn_Click;
@@ -27,80 +22,25 @@ namespace EmployeeManagementSystem
             Task_dtg.CellClick += Task_dtg_CellClick;
         }
 
-        private void InitializeDataComponents()
+        private void LoadData()
         {
             try
             {
-                string sql = "SELECT * FROM Tasks ORDER BY TaskID";
-                adapter = new OracleDataAdapter(sql, conn);
-
-                // Add insert command
-                adapter.InsertCommand = new OracleCommand(
-                    @"INSERT INTO Tasks (TaskID, TaskName, TaskDescription, ProjectID, AssigneeID, Status, 
-                       StartDate, EndDate, CompletionPercentage) 
-                      VALUES (:taskId, :taskName, :taskDescription, :projectId, :assigneeID, :status, 
-                       :startDate, :endDate, :completionPercentage)", conn);
-
-                adapter.InsertCommand.Parameters.Add(":taskId", OracleDbType.Varchar2, 20, "TaskID");
-                adapter.InsertCommand.Parameters.Add(":taskName", OracleDbType.Varchar2, 100, "TaskName");
-                adapter.InsertCommand.Parameters.Add(":taskDescription", OracleDbType.Varchar2, 500, "TaskDescription");
-                adapter.InsertCommand.Parameters.Add(":projectId", OracleDbType.Varchar2, 20, "ProjectID");
-                adapter.InsertCommand.Parameters.Add(":assigneeID", OracleDbType.Varchar2, 20, "AssigneeID");
-                adapter.InsertCommand.Parameters.Add(":Status", OracleDbType.Varchar2, 20, "Status");
-                adapter.InsertCommand.Parameters.Add(":startDate", OracleDbType.Date, 0, "StartDate");
-                adapter.InsertCommand.Parameters.Add(":endDate", OracleDbType.Date, 0, "EndDate");
-                adapter.InsertCommand.Parameters.Add(":completionPercentage", OracleDbType.Varchar2, 20, "CompletionPercentage");
-
-
-                // Add update command
-                adapter.UpdateCommand = new OracleCommand(
-                    @"UPDATE Tasks SET 
-                      TaskName = :taskName,
-                      TaskDescription = :taskDescription,
-                      ProjectID = :projectId,
-                      AssigneeID = :assigneeID,
-                      Status = :status,
-                      StartDate = :startDate,
-                      EndDate = :endDate,
-                      CompletionPercentage = :completionPercentage
-                      WHERE TaskID = :taskId", conn);
-
-                adapter.UpdateCommand.Parameters.Add(":taskName", OracleDbType.Varchar2, 100, "TaskName");
-                adapter.UpdateCommand.Parameters.Add(":taskDescription", OracleDbType.Varchar2, 500, "TaskDescription");
-                adapter.UpdateCommand.Parameters.Add(":projectId", OracleDbType.Varchar2, 20, "ProjectID");
-                adapter.UpdateCommand.Parameters.Add(":assigneeID", OracleDbType.Varchar2, 20, "AssigneeID");
-                adapter.UpdateCommand.Parameters.Add(":status", OracleDbType.Varchar2, 20, "Status");
-                adapter.UpdateCommand.Parameters.Add(":startDate", OracleDbType.Date, 0, "StartDate");
-                adapter.UpdateCommand.Parameters.Add(":endDate", OracleDbType.Date, 0, "EndDate");
-                adapter.UpdateCommand.Parameters.Add(":taskId", OracleDbType.Varchar2, 20, "TaskID");
-                adapter.UpdateCommand.Parameters.Add(":completionPercentage", OracleDbType.Varchar2, 20, "CompletionPercentage");
-
-
-                // Add delete command
-                adapter.DeleteCommand = new OracleCommand(
-                    "DELETE FROM Tasks WHERE TaskID = :taskId", conn);
-                adapter.DeleteCommand.Parameters.Add(":taskId", OracleDbType.Varchar2, 20, "TaskID");
-
-                taskTable = new DataTable();
-                adapter.Fill(taskTable);
-                Task_dtg.DataSource = taskTable;
+                using (OracleConnection conn = new OracleConnection(connectionString))
+                {
+                    conn.Open();
+                    using (OracleCommand cmd = new OracleCommand("SELECT * FROM TASKS ORDER BY TASKID", conn))
+                    {
+                        OracleDataAdapter adapter = new OracleDataAdapter(cmd);
+                        DataTable dt = new DataTable();
+                        adapter.Fill(dt);
+                        Task_dtg.DataSource = dt;
+                    }
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error initializing data components: " + ex.Message);
-            }
-        }
-
-        private void LoadTaskData()
-        {
-            try
-            {
-                taskTable.Clear();
-                adapter.Fill(taskTable);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error loading task data: " + ex.Message);
+                MessageBox.Show("Error loading data: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -108,194 +48,151 @@ namespace EmployeeManagementSystem
         {
             try
             {
-                if (ValidateInput())
+                if (string.IsNullOrWhiteSpace(TaskName_txt.Text) ||
+                    string.IsNullOrWhiteSpace(ProjectID_txt.Text))
                 {
-                    conn.Open(); // Open the connection
-                    using (OracleTransaction transaction = conn.BeginTransaction())
+                    MessageBox.Show("Please fill in all required fields", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                using (OracleConnection conn = new OracleConnection(connectionString))
+                {
+                    conn.Open();
+                    using (OracleCommand cmd = new OracleCommand("PROC_INSERT_TASK", conn))
                     {
+                        cmd.CommandType = CommandType.StoredProcedure;
+
+                        // Output parameters
+                        cmd.Parameters.Add("p_TASKID", OracleDbType.Int32).Direction = ParameterDirection.Output;
+
+                        // Input parameters
+                        cmd.Parameters.Add("p_TASKNAME", OracleDbType.Varchar2).Value = TaskName_txt.Text;
+                        cmd.Parameters.Add("p_TASKDESCRIPTION", OracleDbType.Varchar2).Value =
+                            string.IsNullOrWhiteSpace(TaskDescription_txt.Text) ? DBNull.Value : (object)TaskDescription_txt.Text;
+                        cmd.Parameters.Add("p_PROJECTID", OracleDbType.Int32).Value = Convert.ToInt32(ProjectID_txt.Text);
+                        cmd.Parameters.Add("p_ASSIGNEEID", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                        cmd.Parameters.Add("p_STATUS", OracleDbType.Varchar2).Value =
+                            string.IsNullOrWhiteSpace(TaskStatus_cmb.Text) ? "Not Started" : TaskStatus_cmb.Text;
+                        cmd.Parameters.Add("p_STARTDATE", OracleDbType.Date).Value = StartDate_dtp.Value;
+                        cmd.Parameters.Add("p_ENDDATE", OracleDbType.Date).Value = EndDate_dtp.Value;
+                        cmd.Parameters.Add("p_COMPLETIONPERCENTAGE", OracleDbType.Int32).Value =
+                            string.IsNullOrWhiteSpace(CP_txt.Text) ? 0 : Convert.ToInt32(CP_txt.Text);
+
                         try
                         {
-                            // 1. Add Task
-                            DataRow newRow = taskTable.NewRow();
-                            newRow["TaskID"] = TaskID_txt.Text;
-                            newRow["TaskName"] = TaskName_txt.Text;
-                            newRow["TaskDescription"] = TaskDescription_txt.Text;
-                            newRow["ProjectID"] = ProjectID_txt.Text;
-                            newRow["AssigneeID"] = AssigneeID_txt.Text;
-                            newRow["Status"] = TaskStatus_cmb.SelectedItem.ToString();
-                            newRow["StartDate"] = StartDate_dtp.Value;
-                            newRow["EndDate"] = EndDate_dtp.Value;
-                            newRow["CompletionPercentage"] = CP_txt.Text;
+                            cmd.ExecuteNonQuery();
 
+                            // Convert OracleDecimal to Int32 for OUT parameters
+                            int newTaskId = ((Oracle.ManagedDataAccess.Types.OracleDecimal)cmd.Parameters["p_TASKID"].Value).ToInt32();
+                            int newAssignmentId = ((Oracle.ManagedDataAccess.Types.OracleDecimal)cmd.Parameters["p_ASSIGNEEID"].Value).ToInt32();
 
-                            taskTable.Rows.Add(newRow);
-                            adapter.Update(taskTable);
-
-                            // 2. Add TaskAssignment
-                            using (OracleCommand cmd = new OracleCommand(@"
-                        INSERT INTO TaskAssignments (
-                            TaskID,
-                            AssignmentID
-                        ) VALUES (
-                            :taskID,
-                            :assignmentID
-                        )", conn))
-                            {
-                                cmd.Parameters.Add(":taskID", OracleDbType.Varchar2).Value = TaskID_txt.Text;
-                                cmd.Parameters.Add(":assignmentID", OracleDbType.Varchar2).Value = AssigneeID_txt.Text;
-
-                                cmd.Transaction = transaction;
-                                cmd.ExecuteNonQuery();
-                            }
-
-                            transaction.Commit();
-                            MessageBox.Show("Task added and assigned successfully!");
+                            MessageBox.Show("Task added successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             ClearFields();
-                            LoadTaskData();
+                            LoadData();
                         }
-                        catch (Exception ex)
+                        catch (OracleException ex)
                         {
-                            transaction.Rollback();
-                            throw new Exception("Error in transaction: " + ex.Message);
+                            if (ex.Number == 20001) // Our custom error from the trigger
+                            {
+                                MessageBox.Show("This employee already has 3 tasks assigned. Cannot assign more tasks.",
+                                    "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            }
+                            else
+                            {
+                                throw; // Re-throw other Oracle exceptions
+                            }
                         }
                     }
                 }
             }
+            catch (FormatException)
+            {
+                MessageBox.Show("Please enter valid numeric values for Project ID, Assignee ID and Completion Percentage",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
             catch (Exception ex)
             {
-                MessageBox.Show("Error adding task: " + ex.Message);
-            }
-            finally
-            {
-                if (conn.State == ConnectionState.Open)
-                    conn.Close(); // Ensure the connection is closed
+                MessageBox.Show("Error adding task: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
 
 
         private void Update_btn_Click(object sender, EventArgs e)
         {
+            if (string.IsNullOrEmpty(TaskID_txt.Text))
+            {
+                MessageBox.Show("Please select a task to update", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             try
             {
-                if (ValidateInput())
+                using (OracleConnection conn = new OracleConnection(connectionString))
                 {
                     conn.Open();
-                    using (OracleTransaction transaction = conn.BeginTransaction())
+                    using (OracleCommand cmd = new OracleCommand("PROC_UPDATE_TASK", conn))
                     {
-                        try
-                        {
-                            // 1. Update the task in the Tasks table
-                            DataRow[] rows = taskTable.Select($"TaskID = '{TaskID_txt.Text}'");
-                            if (rows.Length > 0)
-                            {
-                                DataRow row = rows[0];
-                                row["TaskID"] = TaskID_txt.Text;
-                                row["TaskName"] = TaskName_txt.Text;
-                                row["TaskDescription"] = TaskDescription_txt.Text;
-                                row["ProjectID"] = ProjectID_txt.Text;
-                                row["AssigneeID"] = AssigneeID_txt.Text;
-                                row["Status"] = TaskStatus_cmb.SelectedItem.ToString();
-                                row["StartDate"] = StartDate_dtp.Value;
-                                row["EndDate"] = EndDate_dtp.Value;
-                                row["CompletionPercentage"] = CP_txt.Text;
+                        cmd.CommandType = CommandType.StoredProcedure;
 
+                        cmd.Parameters.Add("p_TASKID", OracleDbType.Int32).Value = Convert.ToInt32(TaskID_txt.Text);
+                        cmd.Parameters.Add("p_TASKNAME", OracleDbType.Varchar2).Value = TaskName_txt.Text;
+                        cmd.Parameters.Add("p_TASKDESCRIPTION", OracleDbType.Varchar2).Value = TaskDescription_txt.Text;
+                        cmd.Parameters.Add("p_PROJECTID", OracleDbType.Int32).Value = Convert.ToInt32(ProjectID_txt.Text);
+                        cmd.Parameters.Add("p_ASSIGNEEID", OracleDbType.Int32).Value = Convert.ToInt32(AssigneeID_txt.Text);
+                        cmd.Parameters.Add("p_STATUS", OracleDbType.Varchar2).Value = TaskStatus_cmb.Text;
+                        cmd.Parameters.Add("p_STARTDATE", OracleDbType.Date).Value = StartDate_dtp.Value;
+                        cmd.Parameters.Add("p_ENDDATE", OracleDbType.Date).Value = EndDate_dtp.Value;
+                        cmd.Parameters.Add("p_COMPLETIONPERCENTAGE", OracleDbType.Int32).Value = Convert.ToInt32(CP_txt.Text);
 
-                                adapter.Update(taskTable);
-                            }
+                        cmd.ExecuteNonQuery();
 
-                            // 2. Update the TaskAssignments table
-                            using (OracleCommand updateAssignmentCmd = new OracleCommand(
-                                "UPDATE TaskAssignments SET AssignmentID = :assignmentID WHERE TaskID = :taskId", conn))
-                            {
-                                updateAssignmentCmd.Parameters.Add(":assignmentID", OracleDbType.Varchar2).Value = AssigneeID_txt.Text;
-                                updateAssignmentCmd.Parameters.Add(":taskId", OracleDbType.Varchar2).Value = TaskID_txt.Text;
-
-                                updateAssignmentCmd.Transaction = transaction;
-                                updateAssignmentCmd.ExecuteNonQuery();
-                            }
-
-                            transaction.Commit();
-                            MessageBox.Show("Task and its assignment updated successfully!");
-                            ClearFields();
-                            LoadTaskData();
-                        }
-                        catch (Exception ex)
-                        {
-                            transaction.Rollback();
-                            throw new Exception("Error in transaction: " + ex.Message);
-                        }
+                        MessageBox.Show("Task updated successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        ClearFields();
+                        LoadData();
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error updating task: " + ex.Message);
-            }
-            finally
-            {
-                if (conn.State == ConnectionState.Open)
-                    conn.Close(); // Ensure the connection is closed
+                MessageBox.Show("Error updating task: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
 
         private void Delete_btn_Click(object sender, EventArgs e)
         {
-            try
+            if (string.IsNullOrEmpty(TaskID_txt.Text))
             {
-                if (string.IsNullOrWhiteSpace(TaskID_txt.Text))
-                {
-                    MessageBox.Show("Please select a task to delete.");
-                    return;
-                }
+                MessageBox.Show("Please select a task to delete", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-                if (MessageBox.Show("Are you sure you want to delete this task?", "Confirm Delete",
-                    MessageBoxButtons.YesNo) == DialogResult.Yes)
+            if (MessageBox.Show("Are you sure you want to delete this task?", "Confirm Delete",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                try
                 {
-                    using (OracleTransaction transaction = conn.BeginTransaction())
+                    using (OracleConnection conn = new OracleConnection(connectionString))
                     {
-                        try
+                        conn.Open();
+                        using (OracleCommand cmd = new OracleCommand("PROC_DELETE_TASK", conn))
                         {
-                            // 1. Delete from TaskAssignments table
-                            using (OracleCommand deleteAssignmentCmd = new OracleCommand(
-                                "DELETE FROM TaskAssignments WHERE TaskID = :taskId", conn))
-                            {
-                                deleteAssignmentCmd.Parameters.Add(":taskId", OracleDbType.Varchar2).Value = TaskID_txt.Text;
-                                deleteAssignmentCmd.Transaction = transaction;
-                                deleteAssignmentCmd.ExecuteNonQuery();
-                            }
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.Add("p_TASKID", OracleDbType.Int32).Value = Convert.ToInt32(TaskID_txt.Text);
 
-                            // 2. Delete from Tasks table
-                            DataRow[] rows = taskTable.Select($"TaskID = '{TaskID_txt.Text}'");
-                            if (rows.Length > 0)
-                            {
-                                rows[0].Delete();
-                                adapter.Update(taskTable);
-                            }
+                            cmd.ExecuteNonQuery();
 
-                            transaction.Commit();
-                            MessageBox.Show("Task and its assignments deleted successfully!");
+                            MessageBox.Show("Task deleted successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             ClearFields();
-                            LoadTaskData();
-                        }
-                        catch (Exception ex)
-                        {
-                            transaction.Rollback();
-                            throw new Exception("Error in transaction: " + ex.Message);
+                            LoadData();
                         }
                     }
                 }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error deleting task: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error deleting task: " + ex.Message);
-            }
-        }
-
-
-        private void Clear_btn_Click(object sender, EventArgs e)
-        {
-            ClearFields();
         }
 
         private void Task_dtg_CellClick(object sender, DataGridViewCellEventArgs e)
@@ -303,17 +200,22 @@ namespace EmployeeManagementSystem
             if (e.RowIndex >= 0)
             {
                 DataGridViewRow row = Task_dtg.Rows[e.RowIndex];
-                TaskID_txt.Text = row.Cells["TaskID"].Value.ToString();
-                TaskName_txt.Text = row.Cells["TaskName"].Value.ToString();
-                TaskDescription_txt.Text = row.Cells["TaskDescription"].Value.ToString();
-                ProjectID_txt.Text = row.Cells["ProjectID"].Value.ToString();
-                AssigneeID_txt.Text = row.Cells["AssigneeID"].Value.ToString();
-                TaskStatus_cmb.SelectedItem = row.Cells["Status"].Value.ToString();
-                StartDate_dtp.Value = Convert.ToDateTime(row.Cells["StartDate"].Value);
-                EndDate_dtp.Value = Convert.ToDateTime(row.Cells["EndDate"].Value);
-                CP_txt.Text = row.Cells["CompletionPercentage"].Value.ToString();
 
+                TaskID_txt.Text = row.Cells["TASKID"].Value.ToString();
+                TaskName_txt.Text = row.Cells["TASKNAME"].Value.ToString();
+                TaskDescription_txt.Text = row.Cells["TASKDESCRIPTION"].Value.ToString();
+                ProjectID_txt.Text = row.Cells["PROJECTID"].Value.ToString();
+                AssigneeID_txt.Text = row.Cells["ASSIGNEEID"].Value.ToString();
+                TaskStatus_cmb.Text = row.Cells["STATUS"].Value.ToString();
+                StartDate_dtp.Value = Convert.ToDateTime(row.Cells["STARTDATE"].Value);
+                EndDate_dtp.Value = Convert.ToDateTime(row.Cells["ENDDATE"].Value);
+                CP_txt.Text = row.Cells["COMPLETIONPERCENTAGE"].Value.ToString();
             }
+        }
+
+        private void Clear_btn_Click(object sender, EventArgs e)
+        {
+            ClearFields();
         }
 
         private void ClearFields()
@@ -327,28 +229,12 @@ namespace EmployeeManagementSystem
             StartDate_dtp.Value = DateTime.Now;
             EndDate_dtp.Value = DateTime.Now;
             CP_txt.Clear();
-
         }
 
-        private bool ValidateInput()
+        private void Task_Load(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(TaskID_txt.Text) ||
-                string.IsNullOrWhiteSpace(TaskName_txt.Text) ||
-                string.IsNullOrWhiteSpace(ProjectID_txt.Text) ||
-                string.IsNullOrWhiteSpace(AssigneeID_txt.Text) ||
-                TaskStatus_cmb.SelectedIndex == -1)
-            {
-                MessageBox.Show("Please fill in all required fields.");
-                return false;
-            }
-
-            if (EndDate_dtp.Value < StartDate_dtp.Value)
-            {
-                MessageBox.Show("End date cannot be earlier than start date.");
-                return false;
-            }
-
-            return true;
+            TaskID_txt.Enabled = false;
+            AssigneeID_txt.Enabled= false;
         }
     }
 }

@@ -357,6 +357,7 @@
             this.Controls.Add(this.panel3);
             this.Name = "Account";
             this.Size = new System.Drawing.Size(1167, 695);
+            this.Load += new System.EventHandler(this.Account_Load);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.Acc_dtg)).EndInit();

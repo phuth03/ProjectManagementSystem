@@ -1,128 +1,87 @@
-﻿using System;
+﻿using Oracle.ManagedDataAccess.Client;
+using System;
 using System.Data;
-using Oracle.ManagedDataAccess.Client;
 using System.Windows.Forms;
 
 namespace EmployeeManagementSystem
 {
     public partial class Account : UserControl
     {
-        // Database connection string
         private string connectionString = "Data Source=localhost:1521/XE;User Id=projectman;Password=Phu123;";
-        private OracleConnection conn;
-
+        OracleConnection conn;
         public Account()
         {
             InitializeComponent();
-            conn = new OracleConnection(connectionString);
-            LoadAccountData();
+            LoadAccounts();
 
-            // Add event handlers
-            Add_btn.Click += new EventHandler(AddAccount);
-            Update_btn.Click += new EventHandler(UpdateAccount);
-            Delete_btn.Click += new EventHandler(DeleteAccount);
-            Clear_btn.Click += new EventHandler(ClearFields);
-            Acc_dtg.CellClick += new DataGridViewCellEventHandler(DataGridView_CellClick);
+            // Wire up event handlers
+            Add_btn.Click += Add_btn_Click;
+            Update_btn.Click += Update_btn_Click;
+            Delete_btn.Click += Delete_btn_Click;
+            Clear_btn.Click += Clear_btn_Click;
+            Acc_dtg.CellClick += Acc_dtg_CellClick;
         }
 
-        // Load account data into DataGridView
-        private void LoadAccountData()
+        private void LoadAccounts()
         {
             try
             {
-                conn.Open();
-                string query = "SELECT * FROM Accounts";
-                OracleCommand cmd = new OracleCommand(query, conn);
-                OracleDataAdapter adapter = new OracleDataAdapter(cmd);
-                DataTable dt = new DataTable();
-                adapter.Fill(dt);
-                Acc_dtg.DataSource = dt;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error loading account data: " + ex.Message);
-            }
-            finally
-            {
-                conn.Close();
-            }
-        }
-
-        // Add new account
-        private void AddAccount(object sender, EventArgs e)
-        {
-            try
-            {
-                if (ValidateInputs())
+                using ( conn = new OracleConnection(connectionString))
                 {
                     conn.Open();
-                    string query = @"INSERT INTO Accounts 
-                           (accountid, username, email, passwordhash, role, employeeid) 
-                           VALUES 
-                           (:accountid, :username, :email, :passwordhash, :role, :employeeid)";
-
-                    OracleCommand cmd = new OracleCommand(query, conn);
-                    cmd.Parameters.Add("accountid", Acc_id.Text);
-                    cmd.Parameters.Add("username", User_txt.Text);
-                    cmd.Parameters.Add("email", Email_txt.Text);
-                    cmd.Parameters.Add("passwordhash", Pass_txt.Text);
-                    cmd.Parameters.Add("role", Roll_cmb.Text);
-                    cmd.Parameters.Add("employeeid", EmpID_txt.Text);
-
-                    int result = cmd.ExecuteNonQuery();
-                    if (result > 0)
+                    using (OracleCommand cmd = new OracleCommand("SELECT ACCOUNTID, USERNAME, PASSWORDHASH, EMAIL, ROLE, EMPLOYEEID FROM ACCOUNTS", conn))
                     {
-                        MessageBox.Show("Account added successfully!");
-                        ClearFields(sender, e);
-                        RefreshDataGridView();
+                        OracleDataAdapter adapter = new OracleDataAdapter(cmd);
+                        DataTable dt = new DataTable();
+                        adapter.Fill(dt);
+                        Acc_dtg.DataSource = dt;
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error adding account: " + ex.Message);
+                MessageBox.Show($"Error loading accounts: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
-                conn.Close();
+                if (conn.State == ConnectionState.Open)
+                    conn.Close();
             }
         }
 
-        // Update existing account
-        private void UpdateAccount(object sender, EventArgs e)
+        private void Add_btn_Click(object sender, EventArgs e)
         {
             try
             {
-                if (ValidateInputs())
+                using (OracleConnection conn = new OracleConnection(connectionString))
                 {
                     conn.Open();
-                    string query = @"UPDATE Accounts 
-                           SET username = :username,
-                               email = :email,
-                               passwordhash = :passwordhash,
-                               role = :role,
-                               employeeid = :employeeid
-                           WHERE accountid = :accountid";
-
-                    OracleCommand cmd = new OracleCommand(query, conn);
-                    cmd.Parameters.Add("username", User_txt.Text);
-                    cmd.Parameters.Add("email", Email_txt.Text);
-                    cmd.Parameters.Add("passwordhash", Pass_txt.Text);
-                    cmd.Parameters.Add("role", Roll_cmb.Text);
-                    cmd.Parameters.Add("employeeid", EmpID_txt.Text);
-                    cmd.Parameters.Add("accountid", Acc_id.Text);
-
-                    int result = cmd.ExecuteNonQuery();
-                    if (result > 0)
+                    using (OracleCommand cmd = new OracleCommand("PROC_INSERT_ACCOUNT", conn))
                     {
-                        MessageBox.Show("Account updated successfully!");
-                        RefreshDataGridView();
+                        cmd.CommandType = CommandType.StoredProcedure;
+
+                        // Output parameter
+                        OracleParameter accountIdParam = new OracleParameter("p_ACCOUNTID", OracleDbType.Int32);
+                        accountIdParam.Direction = ParameterDirection.Output;
+                        cmd.Parameters.Add(accountIdParam);
+
+                        // Input parameters
+                        cmd.Parameters.Add("p_USERNAME", OracleDbType.Varchar2).Value = User_txt.Text;
+                        cmd.Parameters.Add("p_PASSWORDHASH", OracleDbType.Varchar2).Value = Pass_txt.Text;
+                        cmd.Parameters.Add("p_EMAIL", OracleDbType.Varchar2).Value = Email_txt.Text;
+                        cmd.Parameters.Add("p_ROLE", OracleDbType.Varchar2).Value = Roll_cmb.SelectedItem.ToString();
+                        cmd.Parameters.Add("p_EMPLOYEEID", OracleDbType.Int32).Value = int.Parse(EmpID_txt.Text);
+
+                        cmd.ExecuteNonQuery();
+                        MessageBox.Show("Account added successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LoadAccounts();
+                        ClearFields();
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error updating account: " + ex.Message);
+                MessageBox.Show($"Error adding account: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -130,31 +89,47 @@ namespace EmployeeManagementSystem
             }
         }
 
-        // Delete account
-        private void DeleteAccount(object sender, EventArgs e)
+        private void Update_btn_Click(object sender, EventArgs e)
         {
             try
             {
-                if (MessageBox.Show("Are you sure you want to delete this account?", "Confirmation",
-                    MessageBoxButtons.YesNo) == DialogResult.Yes)
+                using (OracleConnection conn = new OracleConnection(connectionString))
                 {
                     conn.Open();
-                    string query = "DELETE FROM Accounts WHERE accountid = :accountid";
-                    OracleCommand cmd = new OracleCommand(query, conn);
-                    cmd.Parameters.Add("accountid", Acc_id.Text);
-
-                    int result = cmd.ExecuteNonQuery();
-                    if (result > 0)
+                    using (OracleCommand cmd = new OracleCommand("PROC_UPDATE_ACCOUNT", conn))
                     {
-                        MessageBox.Show("Account deleted successfully!");
-                        ClearFields(sender, e);
-                        RefreshDataGridView();
+                        cmd.CommandType = CommandType.StoredProcedure;
+
+                        cmd.Parameters.Add("p_ACCOUNTID", OracleDbType.Int32).Value = int.Parse(Acc_id.Text);
+                        cmd.Parameters.Add("p_USERNAME", OracleDbType.Varchar2).Value = User_txt.Text;
+                        cmd.Parameters.Add("p_PASSWORDHASH", OracleDbType.Varchar2).Value = Pass_txt.Text;
+                        cmd.Parameters.Add("p_EMAIL", OracleDbType.Varchar2).Value = Email_txt.Text;
+                        cmd.Parameters.Add("p_ROLE", OracleDbType.Varchar2).Value = Roll_cmb.SelectedItem.ToString();
+                        cmd.Parameters.Add("p_EMPLOYEEID", OracleDbType.Int32).Value = int.Parse(EmpID_txt.Text);
+
+                        OracleParameter successParam = new OracleParameter("p_SUCCESS", OracleDbType.Varchar2, 20);
+                        successParam.Direction = ParameterDirection.Output;
+                        cmd.Parameters.Add(successParam);
+
+                        cmd.ExecuteNonQuery();
+
+                        string result = successParam.Value.ToString();
+                        if (result == "SUCCESS")
+                        {
+                            MessageBox.Show("Account updated successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            LoadAccounts();
+                            ClearFields();
+                        }
+                        else
+                        {
+                            MessageBox.Show("Account update failed!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error deleting account: " + ex.Message);
+                MessageBox.Show($"Error updating account: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -162,73 +137,88 @@ namespace EmployeeManagementSystem
             }
         }
 
-        // New method to refresh DataGridView
-        private void RefreshDataGridView()
+        private void Delete_btn_Click(object sender, EventArgs e)
         {
-            if (Acc_dtg.InvokeRequired)
+            if (string.IsNullOrEmpty(Acc_id.Text))
             {
-                Acc_dtg.Invoke(new Action(RefreshDataGridView));
+                MessageBox.Show("Please select an account to delete.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             try
             {
-                using (OracleConnection newConn = new OracleConnection(connectionString))
+                using (OracleConnection conn = new OracleConnection(connectionString))
                 {
-                    newConn.Open();
-                    string query = "SELECT * FROM Accounts";
-                    OracleDataAdapter adapter = new OracleDataAdapter(query, newConn);
-                    DataTable dt = new DataTable();
-                    adapter.Fill(dt);
-                    Acc_dtg.DataSource = dt;
+                    conn.Open();
+                    using (OracleCommand cmd = new OracleCommand("PROC_DELETE_ACCOUNT", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+
+                        cmd.Parameters.Add("p_ACCOUNTID", OracleDbType.Int32).Value = int.Parse(Acc_id.Text);
+
+                        OracleParameter successParam = new OracleParameter("p_SUCCESS", OracleDbType.Varchar2, 20);
+                        successParam.Direction = ParameterDirection.Output;
+                        cmd.Parameters.Add(successParam);
+
+                        cmd.ExecuteNonQuery();
+
+                        string result = successParam.Value.ToString();
+                        if (result == "SUCCESS")
+                        {
+                            MessageBox.Show("Account deleted successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            LoadAccounts();
+                            ClearFields();
+                        }
+                        else
+                        {
+                            MessageBox.Show("Account deletion failed!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error refreshing data: " + ex.Message);
+                MessageBox.Show($"Error deleting account: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                conn.Close();
             }
         }
 
-        // Clear input fields
-        private void ClearFields(object sender, EventArgs e)
+        private void Clear_btn_Click(object sender, EventArgs e)
+        {
+            ClearFields();
+        }
+
+        private void ClearFields()
         {
             Acc_id.Clear();
             User_txt.Clear();
-            Email_txt.Clear();
             Pass_txt.Clear();
-            EmpID_txt.Clear();
+            Email_txt.Clear();
             Roll_cmb.SelectedIndex = -1;
+            EmpID_txt.Clear();
         }
 
-        // Handle DataGridView cell click
-        private void DataGridView_CellClick(object sender, DataGridViewCellEventArgs e)
+        private void Acc_dtg_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
             {
                 DataGridViewRow row = Acc_dtg.Rows[e.RowIndex];
-                Acc_id.Text = row.Cells["accountid"].Value.ToString();
-                User_txt.Text = row.Cells["username"].Value.ToString();
-                Email_txt.Text = row.Cells["email"].Value.ToString();
-                Pass_txt.Text = row.Cells["passwordhash"].Value.ToString();
-                Roll_cmb.Text = row.Cells["role"].Value.ToString();
-                EmpID_txt.Text = row.Cells["employeeid"].Value.ToString();
+                Acc_id.Text = row.Cells["ACCOUNTID"].Value.ToString();
+                User_txt.Text = row.Cells["USERNAME"].Value.ToString();
+                Pass_txt.Text = row.Cells["PASSWORDHASH"].Value.ToString();
+                Email_txt.Text = row.Cells["EMAIL"].Value.ToString();
+                Roll_cmb.SelectedItem = row.Cells["ROLE"].Value.ToString();
+                EmpID_txt.Text = row.Cells["EMPLOYEEID"].Value.ToString();
+                Pass_txt.Clear(); // For security, don't display the password
             }
         }
 
-        // Validate input fields
-        private bool ValidateInputs()
+        private void Account_Load(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(Acc_id.Text) ||
-                string.IsNullOrWhiteSpace(User_txt.Text) ||
-                string.IsNullOrWhiteSpace(Email_txt.Text) ||
-                string.IsNullOrWhiteSpace(Pass_txt.Text) ||
-                string.IsNullOrWhiteSpace(EmpID_txt.Text) ||
-                string.IsNullOrWhiteSpace(Roll_cmb.Text))
-            {
-                MessageBox.Show("Please fill in all fields.");
-                return false;
-            }
-            return true;
+            Acc_id.Enabled = false;
         }
     }
 }

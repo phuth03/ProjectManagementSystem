@@ -354,6 +354,7 @@
             this.Controls.Add(this.panel3);
             this.Name = "Project";
             this.Size = new System.Drawing.Size(1167, 695);
+            this.Load += new System.EventHandler(this.Project_Load);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.Project_dtg)).EndInit();

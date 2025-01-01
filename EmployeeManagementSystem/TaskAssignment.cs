@@ -1,208 +1,168 @@
-﻿using Oracle.ManagedDataAccess.Client;
-using System;
+﻿using System;
 using System.Data;
 using System.Windows.Forms;
+using Oracle.ManagedDataAccess.Client;
+using Oracle.ManagedDataAccess.Types;
 
 namespace EmployeeManagementSystem
 {
     public partial class TaskAssignment : UserControl
     {
-        private string connectionString = "Data Source=localhost:1521/xe;User Id=projectman;Password=Phu123;";
-        private OracleConnection conn;
-        private DataTable taskDataTable;
-        private OracleDataAdapter taskAdapter;
+        private string connectionString = "Data Source=localhost:1521/XE;User Id=projectman;Password=Phu123;";
 
         public TaskAssignment()
         {
             InitializeComponent();
-            conn = new OracleConnection(connectionString);
-            InitializeDataComponents();
-            LoadTaskData();
-
-            // Add event handler for cell click
-            Task_dtg.CellClick += Task_dtg_CellClick;
         }
 
-        private void InitializeDataComponents()
+        private void TaskAssignment_Load(object sender, EventArgs e)
         {
-            string query = "SELECT * FROM TASKASSIGNMENTS ORDER BY ASSIGNMENTID";
-            taskAdapter = new OracleDataAdapter(query, conn);
-            taskDataTable = new DataTable();
-
-            // Configure the adapter with INSERT, UPDATE, and DELETE commands
-            OracleCommandBuilder builder = new OracleCommandBuilder(taskAdapter);
-            taskAdapter.InsertCommand = builder.GetInsertCommand();
-            taskAdapter.UpdateCommand = builder.GetUpdateCommand();
-            taskAdapter.DeleteCommand = builder.GetDeleteCommand();
+            LoadTaskAssignments();
+            Status_txt.SelectedIndex = 0; // Set default status to "Pending"
+            AssignmentID_txt.Enabled = false;
         }
 
-        private void LoadTaskData()
+        private void LoadTaskAssignments()
         {
             try
             {
-                taskDataTable.Clear();
-                taskAdapter.Fill(taskDataTable);
-                Task_dtg.DataSource = taskDataTable;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error loading data: " + ex.Message);
-            }
-        }
-
-        private void Task_dtg_CellClick(object sender, DataGridViewCellEventArgs e)
-        {
-            if (e.RowIndex >= 0)
-            {
-                DataGridViewRow row = Task_dtg.Rows[e.RowIndex];
-                AssignmentID_txt.Text = row.Cells["ASSIGNMENTID"].Value.ToString();
-                TaskID_txt.Text = row.Cells["TASKID"].Value.ToString();
-                EmployeeID_txt.Text = row.Cells["EMPLOYEEID"].Value.ToString();
-                AssignedDate_txt.Value = Convert.ToDateTime(row.Cells["ASSIGNEDDATE"].Value);
-                Status_txt.Text = row.Cells["STATUS"].Value.ToString();
-            }
-        }
-
-        private bool ValidateData()
-        {
-            if (string.IsNullOrWhiteSpace(AssignmentID_txt.Text) ||
-                string.IsNullOrWhiteSpace(TaskID_txt.Text) ||
-                string.IsNullOrWhiteSpace(EmployeeID_txt.Text) ||
-                string.IsNullOrWhiteSpace(Status_txt.Text))
-            {
-                MessageBox.Show("Please fill in all required fields.");
-                return false;
-            }
-
-            try
-            {
-                using (OracleCommand cmd = new OracleCommand())
+                using (OracleConnection conn = new OracleConnection(connectionString))
                 {
-                    cmd.Connection = conn;
                     conn.Open();
-
-                    // Validate TaskID exists
-                    cmd.CommandText = "SELECT COUNT(*) FROM TASKS WHERE TASKID = :taskid";
-                    cmd.Parameters.Add(":taskid", OracleDbType.Varchar2).Value = TaskID_txt.Text;
-                    int taskCount = Convert.ToInt32(cmd.ExecuteScalar());
-
-                    if (taskCount == 0)
+                    using (OracleCommand cmd = new OracleCommand(
+                        "SELECT a.ASSIGNMENTID, a.TASKID, a.EMPLOYEEID, " +
+                        "TO_CHAR(a.ASSIGNEDDATE, 'MM/DD/YYYY') as ASSIGNEDDATE, a.STATUS " +
+                        "FROM TASKASSIGNMENTS a ORDER BY a.ASSIGNMENTID", conn))
                     {
-                        MessageBox.Show("Invalid Task ID!");
-                        return false;
+                        OracleDataAdapter adapter = new OracleDataAdapter(cmd);
+                        DataTable dt = new DataTable();
+                        adapter.Fill(dt);
+                        Task_dtg.DataSource = dt;
                     }
-
-                    // Validate EmployeeID exists
-                    cmd.Parameters.Clear();
-                    cmd.CommandText = "SELECT COUNT(*) FROM EMPLOYEES WHERE EMPLOYEEID = :empid";
-                    cmd.Parameters.Add(":empid", OracleDbType.Varchar2).Value = EmployeeID_txt.Text;
-                    int empCount = Convert.ToInt32(cmd.ExecuteScalar());
-
-                    if (empCount == 0)
-                    {
-                        MessageBox.Show("Invalid Employee ID!");
-                        return false;
-                    }
-
-                    return true;
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Validation error: " + ex.Message);
-                return false;
-            }
-            finally
-            {
-                if (conn.State == ConnectionState.Open)
-                    conn.Close();
+                MessageBox.Show("Error loading task assignments: " + ex.Message);
             }
         }
 
         private void Add_btn_Click(object sender, EventArgs e)
         {
-            if (!ValidateData()) return;
-
             try
             {
-                DataRow newRow = taskDataTable.NewRow();
-                newRow["ASSIGNMENTID"] = AssignmentID_txt.Text;
-                newRow["TASKID"] = TaskID_txt.Text;
-                newRow["EMPLOYEEID"] = EmployeeID_txt.Text;
-                newRow["ASSIGNEDDATE"] = AssignedDate_txt.Value;
-                newRow["STATUS"] = Status_txt.Text;
+                using (OracleConnection conn = new OracleConnection(connectionString))
+                {
+                    conn.Open();
+                    using (OracleCommand cmd = new OracleCommand("PROC_INSERT_TASKASSIGNMENT", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
 
-                taskDataTable.Rows.Add(newRow);
-                taskAdapter.Update(taskDataTable);
+                        // Get next sequence value
+                        OracleCommand seqCmd = new OracleCommand(
+                            "SELECT SEQ_TASKASSIGNMENTID.NEXTVAL FROM DUAL", conn);
+                        int assignmentId = Convert.ToInt32(seqCmd.ExecuteScalar());
 
-                MessageBox.Show("Task assigned successfully!");
-                LoadTaskData();
-                ClearFields();
+                        // Set parameters
+                        cmd.Parameters.Add("p_ASSIGNMENTID", OracleDbType.Int32).Value = assignmentId;
+                        cmd.Parameters.Add("p_TASKID", OracleDbType.Int32).Value =
+                            Convert.ToInt32(TaskID_txt.Text);
+                        cmd.Parameters.Add("p_EMPLOYEEID", OracleDbType.Int32).Value =
+                            Convert.ToInt32(EmployeeID_txt.Text);
+                        cmd.Parameters.Add("p_ASSIGNEDDATE", OracleDbType.Varchar2).Value =
+                            AssignedDate_txt.Value.ToString("MM/dd/yyyy");
+                        cmd.Parameters.Add("p_STATUS", OracleDbType.Varchar2).Value =
+                            Status_txt.SelectedItem.ToString();
+                        cmd.Parameters.Add("p_RESULT", OracleDbType.Varchar2, 200).Direction =
+                            ParameterDirection.Output;
+
+                        cmd.ExecuteNonQuery();
+
+                        string result = cmd.Parameters["p_RESULT"].Value.ToString();
+                        if (result == "SUCCESS")
+                        {
+                            MessageBox.Show("Task assignment added successfully!");
+                            LoadTaskAssignments();
+                            ClearFields();
+                        }
+                        else
+                        {
+                            MessageBox.Show("Error: " + result);
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
-                taskDataTable.RejectChanges();
-                MessageBox.Show("Error adding task: " + ex.Message);
+                MessageBox.Show("Error adding task assignment: " + ex.Message);
             }
         }
 
         private void Update_btn_Click(object sender, EventArgs e)
         {
-            if (!ValidateData()) return;
-
             try
             {
-                DataRow[] rows = taskDataTable.Select($"ASSIGNMENTID = '{AssignmentID_txt.Text}'");
-                if (rows.Length > 0)
+                using (OracleConnection conn = new OracleConnection(connectionString))
                 {
-                    rows[0]["TASKID"] = TaskID_txt.Text;
-                    rows[0]["EMPLOYEEID"] = EmployeeID_txt.Text;
-                    rows[0]["ASSIGNEDDATE"] = AssignedDate_txt.Value;
-                    rows[0]["STATUS"] = Status_txt.Text;
-
-                    taskAdapter.Update(taskDataTable);
-                    MessageBox.Show("Task assignment updated successfully!");
-                    LoadTaskData();
-                    ClearFields();
-                }
-            }
-            catch (Exception ex)
-            {
-                taskDataTable.RejectChanges();
-                MessageBox.Show("Error updating task: " + ex.Message);
-            }
-        }
-
-        private void Delete_btn_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(AssignmentID_txt.Text))
-            {
-                MessageBox.Show("Please select a task assignment to delete.");
-                return;
-            }
-
-            try
-            {
-                if (MessageBox.Show("Are you sure you want to delete this task assignment?",
-                    "Confirmation", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                {
-                    DataRow[] rows = taskDataTable.Select($"ASSIGNMENTID = '{AssignmentID_txt.Text}'");
-                    if (rows.Length > 0)
+                    conn.Open();
+                    using (OracleCommand cmd = new OracleCommand("PROC_UPDATE_TASKASSIGNMENT", conn))
                     {
-                        rows[0].Delete();
-                        taskAdapter.Update(taskDataTable);
-                        MessageBox.Show("Task assignment deleted successfully!");
-                        LoadTaskData();
+                        cmd.CommandType = CommandType.StoredProcedure;
+
+                        cmd.Parameters.Add("p_ASSIGNMENTID", OracleDbType.Int32).Value =
+                            Convert.ToInt32(AssignmentID_txt.Text);
+                        cmd.Parameters.Add("p_TASKID", OracleDbType.Int32).Value =
+                            Convert.ToInt32(TaskID_txt.Text);
+                        cmd.Parameters.Add("p_EMPLOYEEID", OracleDbType.Int32).Value =
+                            Convert.ToInt32(EmployeeID_txt.Text);
+                        cmd.Parameters.Add("p_ASSIGNEDDATE", OracleDbType.Varchar2).Value =
+                            AssignedDate_txt.Value.ToString("MM/dd/yyyy");
+                        cmd.Parameters.Add("p_STATUS", OracleDbType.Varchar2).Value =
+                            Status_txt.SelectedItem.ToString();
+
+                        cmd.ExecuteNonQuery();
+                        MessageBox.Show("Task assignment updated successfully!");
+                        LoadTaskAssignments();
                         ClearFields();
                     }
                 }
             }
             catch (Exception ex)
             {
-                taskDataTable.RejectChanges();
-                MessageBox.Show("Error deleting task: " + ex.Message);
+                MessageBox.Show("Error updating task assignment: " + ex.Message);
             }
         }
+
+        private void Delete_btn_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show("Are you sure you want to delete this task assignment?",
+                "Confirm Delete", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            {
+                try
+                {
+                    using (OracleConnection conn = new OracleConnection(connectionString))
+                    {
+                        conn.Open();
+                        using (OracleCommand cmd = new OracleCommand("PROC_DELETE_TASKASSIGNMENT", conn))
+                        {
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.Add("p_ASSIGNMENTID", OracleDbType.Int32).Value =
+                                Convert.ToInt32(AssignmentID_txt.Text);
+
+                            cmd.ExecuteNonQuery();
+                            MessageBox.Show("Task assignment deleted successfully!");
+                            LoadTaskAssignments();
+                            ClearFields();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error deleting task assignment: " + ex.Message);
+                }
+            }
+        }
+
         private void Clear_btn_Click(object sender, EventArgs e)
         {
             ClearFields();
@@ -214,14 +174,20 @@ namespace EmployeeManagementSystem
             TaskID_txt.Clear();
             EmployeeID_txt.Clear();
             AssignedDate_txt.Value = DateTime.Now;
-            Status_txt.SelectedIndex = -1;
+            Status_txt.SelectedIndex = 0;
         }
 
-        private void TaskAssignment_Load(object sender, EventArgs e)
+        private void Task_dtg_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            LoadTaskData();
-
+            if (e.RowIndex >= 0)
+            {
+                DataGridViewRow row = Task_dtg.Rows[e.RowIndex];
+                AssignmentID_txt.Text = row.Cells["ASSIGNMENTID"].Value.ToString();
+                TaskID_txt.Text = row.Cells["TASKID"].Value.ToString();
+                EmployeeID_txt.Text = row.Cells["EMPLOYEEID"].Value.ToString();
+                AssignedDate_txt.Value = DateTime.Parse(row.Cells["ASSIGNEDDATE"].Value.ToString());
+                Status_txt.Text = row.Cells["STATUS"].Value.ToString();
+            }
         }
     }
 }
-

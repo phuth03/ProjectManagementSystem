@@ -49,6 +49,8 @@ namespace EmployeeManagementSystem
             this.label1 = new System.Windows.Forms.Label();
             this.panel2 = new System.Windows.Forms.Panel();
             this.panel3 = new System.Windows.Forms.Panel();
+            this.CP_txt = new System.Windows.Forms.TextBox();
+            this.label10 = new System.Windows.Forms.Label();
             this.TaskDescription_txt = new System.Windows.Forms.TextBox();
             this.label9 = new System.Windows.Forms.Label();
             this.label8 = new System.Windows.Forms.Label();
@@ -56,8 +58,6 @@ namespace EmployeeManagementSystem
             this.StartDate_dtp = new System.Windows.Forms.DateTimePicker();
             this.AssigneeID_txt = new System.Windows.Forms.TextBox();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.CP_txt = new System.Windows.Forms.TextBox();
-            this.label10 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.Task_dtg)).BeginInit();
             this.panel3.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -332,6 +332,26 @@ namespace EmployeeManagementSystem
             this.panel3.Size = new System.Drawing.Size(1118, 264);
             this.panel3.TabIndex = 4;
             // 
+            // CP_txt
+            // 
+            this.CP_txt.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.CP_txt.Location = new System.Drawing.Point(927, 137);
+            this.CP_txt.Margin = new System.Windows.Forms.Padding(4);
+            this.CP_txt.Name = "CP_txt";
+            this.CP_txt.Size = new System.Drawing.Size(175, 24);
+            this.CP_txt.TabIndex = 26;
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label10.Location = new System.Drawing.Point(752, 137);
+            this.label10.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(167, 18);
+            this.label10.TabIndex = 25;
+            this.label10.Text = "Completion Percentage:";
+            // 
             // TaskDescription_txt
             // 
             this.TaskDescription_txt.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -399,26 +419,6 @@ namespace EmployeeManagementSystem
             this.panel1.Size = new System.Drawing.Size(1118, 343);
             this.panel1.TabIndex = 3;
             // 
-            // CP_txt
-            // 
-            this.CP_txt.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.CP_txt.Location = new System.Drawing.Point(927, 137);
-            this.CP_txt.Margin = new System.Windows.Forms.Padding(4);
-            this.CP_txt.Name = "CP_txt";
-            this.CP_txt.Size = new System.Drawing.Size(175, 24);
-            this.CP_txt.TabIndex = 26;
-            // 
-            // label10
-            // 
-            this.label10.AutoSize = true;
-            this.label10.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label10.Location = new System.Drawing.Point(752, 137);
-            this.label10.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(167, 18);
-            this.label10.TabIndex = 25;
-            this.label10.Text = "Completion Percentage:";
-            // 
             // Task
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
@@ -428,6 +428,7 @@ namespace EmployeeManagementSystem
             this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "Task";
             this.Size = new System.Drawing.Size(1167, 695);
+            this.Load += new System.EventHandler(this.Task_Load);
             ((System.ComponentModel.ISupportInitialize)(this.Task_dtg)).EndInit();
             this.panel3.ResumeLayout(false);
             this.panel3.PerformLayout();
