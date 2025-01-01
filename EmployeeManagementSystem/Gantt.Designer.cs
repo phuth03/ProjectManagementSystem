@@ -16,6 +16,9 @@
             if (disposing && (components != null))
             {
                 components.Dispose();
+                refreshTimer?.Stop();
+                refreshTimer?.Dispose();
+
             }
             base.Dispose(disposing);
         }

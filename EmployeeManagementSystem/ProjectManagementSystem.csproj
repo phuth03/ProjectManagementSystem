@@ -109,9 +109,6 @@
     <Compile Include="AddEmployee.Designer.cs">
       <DependentUpon>AddEmployee.cs</DependentUpon>
     </Compile>
-    <Compile Include="BaseUserControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
     <Compile Include="EmployeeData.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
@@ -216,6 +213,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\icons8-project-30.png" />
+    <None Include="Assets\icons8-task-30.png" />
+    <None Include="Assets\icons8-account-30.png" />
+    <None Include="Assets\icons8-gantt-chart-32.png" />
     <Content Include="Assets\icons8_commercial_development_management_60px.png" />
     <Content Include="Assets\icons8_dashboard_30px.png" />
     <Content Include="Assets\icons8_employee_card_100px.png" />

@@ -29,12 +29,14 @@ namespace EmployeeManagementSystem
                 using ( conn = new OracleConnection(connectionString))
                 {
                     conn.Open();
-                    using (OracleCommand cmd = new OracleCommand("SELECT ACCOUNTID, USERNAME, PASSWORDHASH, EMAIL, ROLE, EMPLOYEEID FROM ACCOUNTS", conn))
+                    using (OracleCommand cmd = new OracleCommand("SELECT ACCOUNTID, USERNAME, PASSWORDHASH, EMAIL, ROLE, EMPLOYEEID FROM ACCOUNTS ORDER BY ACCOUNTID", conn))
                     {
                         OracleDataAdapter adapter = new OracleDataAdapter(cmd);
                         DataTable dt = new DataTable();
                         adapter.Fill(dt);
                         Acc_dtg.DataSource = dt;
+                        Acc_dtg.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+
                     }
                 }
             }
@@ -212,7 +214,6 @@ namespace EmployeeManagementSystem
                 Email_txt.Text = row.Cells["EMAIL"].Value.ToString();
                 Roll_cmb.SelectedItem = row.Cells["ROLE"].Value.ToString();
                 EmpID_txt.Text = row.Cells["EMPLOYEEID"].Value.ToString();
-                Pass_txt.Clear(); // For security, don't display the password
             }
         }
 

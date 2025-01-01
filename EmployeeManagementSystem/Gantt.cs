@@ -19,7 +19,8 @@ namespace EmployeeManagementSystem
         private VScrollBar vScrollBar;
         private HScrollBar hScrollBar;
         private const int PADDING = 10;
-
+        private Timer refreshTimer;
+        public event EventHandler DataUpdated;
         public Gantt()
         {
             InitializeComponent();
@@ -27,7 +28,20 @@ namespace EmployeeManagementSystem
             this.DoubleBuffered = true;
             this.Paint += Gantt_Paint;
             this.Resize += Gantt_Resize;
+            InitializeRefreshTimer();
+
             LoadData();
+        }
+        private void InitializeRefreshTimer()
+        {
+            refreshTimer = new Timer();
+            refreshTimer.Interval = 1000; // Check every second
+            refreshTimer.Tick += RefreshTimer_Tick;
+            refreshTimer.Start();
+        }
+        private void RefreshTimer_Tick(object sender, EventArgs e)
+        {
+            RefreshData();
         }
 
         private void InitializeScrollbars()
@@ -121,7 +135,7 @@ namespace EmployeeManagementSystem
                         LEFT JOIN Employees e ON ta.employeeid = e.employeeid
                         WHERE t.startdate IS NOT NULL 
                         AND t.enddate IS NOT NULL
-                        ORDER BY t.startdate", conn))
+                        ORDER BY t.taskid", conn))
                     {
                         taskData = new DataTable();
                         new OracleDataAdapter(cmd).Fill(taskData);
@@ -299,5 +313,104 @@ namespace EmployeeManagementSystem
             LoadData();
 
         }
+        public void RefreshGantt()
+        {
+            RefreshData();
+        }
+
+        private void RefreshData()
+        {
+            string connectionString = "Data Source=localhost:1521/XE;User Id=projectman;Password=Phu123;";
+            using (OracleConnection conn = new OracleConnection(connectionString))
+            {
+                try
+                {
+                    conn.Open();
+                    using (OracleCommand cmd = new OracleCommand(@"
+                        SELECT 
+                            t.taskid,
+                            t.taskname,
+                            t.startdate,
+                            t.enddate,
+                            t.completionpercentage,
+                            e.EMPLOYEENAME as assigned_to
+                        FROM Tasks t
+                        LEFT JOIN TaskAssignments ta ON t.taskid = ta.taskid
+                        LEFT JOIN Employees e ON ta.employeeid = e.employeeid
+                        WHERE t.startdate IS NOT NULL 
+                        AND t.enddate IS NOT NULL
+                        ORDER BY t.taskid", conn))
+                    {
+                        DataTable newTaskData = new DataTable();
+                        new OracleDataAdapter(cmd).Fill(newTaskData);
+
+                        // Check if data has changed
+                        if (!DataTablesAreEqual(taskData, newTaskData))
+                        {
+                            taskData = newTaskData;
+                            UpdateDateRange();
+                            UpdateScrollBars();
+                            mainPanel.Invalidate();
+
+                            // Raise event to notify subscribers of data update
+                            DataUpdated?.Invoke(this, EventArgs.Empty);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error refreshing data: " + ex.Message);
+                }
+            }
+        }
+
+        private bool DataTablesAreEqual(DataTable dt1, DataTable dt2)
+        {
+            if (dt1 == null || dt2 == null) return dt1 == dt2;
+            if (dt1.Rows.Count != dt2.Rows.Count) return false;
+
+            for (int i = 0; i < dt1.Rows.Count; i++)
+            {
+                for (int j = 0; j < dt1.Columns.Count; j++)
+                {
+                    if (!Equals(dt1.Rows[i][j], dt2.Rows[i][j]))
+                        return false;
+                }
+            }
+            return true;
+        }
+
+        private void UpdateDateRange()
+        {
+            if (taskData != null && taskData.Rows.Count > 0)
+            {
+                startDate = DateTime.MaxValue;
+                endDate = DateTime.MinValue;
+
+                foreach (DataRow row in taskData.Rows)
+                {
+                    if (!row.IsNull("startdate") && !row.IsNull("enddate"))
+                    {
+                        DateTime taskStart = Convert.ToDateTime(row["startdate"]);
+                        DateTime taskEnd = Convert.ToDateTime(row["enddate"]);
+
+                        if (taskStart < startDate) startDate = taskStart;
+                        if (taskEnd > endDate) endDate = taskEnd;
+                    }
+                }
+
+                // Add buffer days
+                startDate = startDate.AddDays(-5);
+                endDate = endDate.AddDays(5);
+            }
+            else
+            {
+                startDate = DateTime.Today;
+                endDate = DateTime.Today.AddDays(30);
+            }
+        }
+
+        // Override Dispose to clean up timer
+
     }
 }

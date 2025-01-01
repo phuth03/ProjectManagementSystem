@@ -45,6 +45,8 @@ namespace EmployeeManagementSystem
                     DataTable dt = new DataTable();
                     adapter.Fill(dt);
                     Project_dtg.DataSource = dt;
+                    Project_dtg.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+
                 }
             }
             catch (Exception ex)

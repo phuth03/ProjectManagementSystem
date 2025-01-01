@@ -19,7 +19,7 @@ namespace EmployeeManagementSystem
         {
             LoadTaskAssignments();
             Status_txt.SelectedIndex = 0; // Set default status to "Pending"
-            AssignmentID_txt.Enabled = false;
+            AssignmentID_txt.Enabled = false;   
         }
 
         private void LoadTaskAssignments()
@@ -38,6 +38,8 @@ namespace EmployeeManagementSystem
                         DataTable dt = new DataTable();
                         adapter.Fill(dt);
                         Task_dtg.DataSource = dt;
+                        Task_dtg.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+
                     }
                 }
             }
@@ -69,10 +71,10 @@ namespace EmployeeManagementSystem
                             Convert.ToInt32(TaskID_txt.Text);
                         cmd.Parameters.Add("p_EMPLOYEEID", OracleDbType.Int32).Value =
                             Convert.ToInt32(EmployeeID_txt.Text);
-                        cmd.Parameters.Add("p_ASSIGNEDDATE", OracleDbType.Varchar2).Value =
-                            AssignedDate_txt.Value.ToString("MM/dd/yyyy");
+                        cmd.Parameters.Add("p_ASSIGNEDDATE", OracleDbType.Date).Value =
+                            AssignedDate_txt.Value;
                         cmd.Parameters.Add("p_STATUS", OracleDbType.Varchar2).Value =
-                            Status_txt.SelectedItem.ToString();
+                            Status_txt;
                         cmd.Parameters.Add("p_RESULT", OracleDbType.Varchar2, 200).Direction =
                             ParameterDirection.Output;
 
@@ -108,15 +110,14 @@ namespace EmployeeManagementSystem
                     using (OracleCommand cmd = new OracleCommand("PROC_UPDATE_TASKASSIGNMENT", conn))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
-
                         cmd.Parameters.Add("p_ASSIGNMENTID", OracleDbType.Int32).Value =
                             Convert.ToInt32(AssignmentID_txt.Text);
                         cmd.Parameters.Add("p_TASKID", OracleDbType.Int32).Value =
                             Convert.ToInt32(TaskID_txt.Text);
                         cmd.Parameters.Add("p_EMPLOYEEID", OracleDbType.Int32).Value =
                             Convert.ToInt32(EmployeeID_txt.Text);
-                        cmd.Parameters.Add("p_ASSIGNEDDATE", OracleDbType.Varchar2).Value =
-                            AssignedDate_txt.Value.ToString("MM/dd/yyyy");
+                        cmd.Parameters.Add("p_ASSIGNEDDATE", OracleDbType.Date).Value =
+                            AssignedDate_txt.Value;  
                         cmd.Parameters.Add("p_STATUS", OracleDbType.Varchar2).Value =
                             Status_txt.SelectedItem.ToString();
 
