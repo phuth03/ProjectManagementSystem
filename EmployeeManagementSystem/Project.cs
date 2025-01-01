@@ -8,16 +8,13 @@ namespace EmployeeManagementSystem
     public partial class Project : UserControl
     {
         private string connectionString = "Data Source=localhost:1521/XE;User Id=projectman;Password=Phu123;";
-        private OracleConnection conn;
-        private OracleDataAdapter adapter;
-        private DataTable projectTable;
+        OracleConnection conn;
 
         public Project()
         {
             InitializeComponent();
-            conn = new OracleConnection(connectionString);
-            InitializeDataComponents();
-            LoadProjectData();
+            InitializeDatabase();
+            LoadProjects();
 
             // Add event handlers
             Add_btn.Click += Add_btn_Click;
@@ -27,95 +24,76 @@ namespace EmployeeManagementSystem
             Project_dtg.CellClick += Project_dtg_CellClick;
         }
 
-        private void InitializeDataComponents()
+        private void InitializeDatabase()
+        {
+            
+            conn = new OracleConnection(connectionString);
+        }
+
+        private void LoadProjects()
         {
             try
             {
-                string sql = "SELECT * FROM Projects ORDER BY ProjectID";
-                adapter = new OracleDataAdapter(sql, conn);
+                if (conn.State != ConnectionState.Open)
+                {
+                    conn.Open();
+                }
 
-                // Add insert command
-                adapter.InsertCommand = new OracleCommand(
-                    @"INSERT INTO Projects (ProjectID, ProjectName, ProjectManagerID, Status, StartDate, EndDate) 
-                      VALUES (:projectId, :projectName, :managerId, :status, :startDate, :endDate)", conn);
-
-                adapter.InsertCommand.Parameters.Add(":projectId", OracleDbType.Varchar2, 20, "ProjectID");
-                adapter.InsertCommand.Parameters.Add(":projectName", OracleDbType.Varchar2, 100, "ProjectName");
-                adapter.InsertCommand.Parameters.Add(":managerId", OracleDbType.Varchar2, 20, "ProjectManagerID");
-                adapter.InsertCommand.Parameters.Add(":status", OracleDbType.Varchar2, 20, "Status");
-                adapter.InsertCommand.Parameters.Add(":startDate", OracleDbType.Date, 0, "StartDate");
-                adapter.InsertCommand.Parameters.Add(":endDate", OracleDbType.Date, 0, "EndDate");
-
-                // Add update command
-                adapter.UpdateCommand = new OracleCommand(
-                    @"UPDATE Projects SET 
-                      ProjectName = :projectName, 
-                      ProjectManagerID = :managerId, 
-                      Status = :status, 
-                      StartDate = :startDate, 
-                      EndDate = :endDate 
-                      WHERE ProjectID = :projectId", conn);
-
-                adapter.UpdateCommand.Parameters.Add(":projectName", OracleDbType.Varchar2, 100, "ProjectName");
-                adapter.UpdateCommand.Parameters.Add(":managerId", OracleDbType.Varchar2, 20, "ProjectManagerID");
-                adapter.UpdateCommand.Parameters.Add(":status", OracleDbType.Varchar2, 20, "Status");
-                adapter.UpdateCommand.Parameters.Add(":startDate", OracleDbType.Date, 0, "StartDate");
-                adapter.UpdateCommand.Parameters.Add(":endDate", OracleDbType.Date, 0, "EndDate");
-                adapter.UpdateCommand.Parameters.Add(":projectId", OracleDbType.Varchar2, 20, "ProjectID");
-
-                // Add delete command
-                adapter.DeleteCommand = new OracleCommand(
-                    "DELETE FROM Projects WHERE ProjectID = :projectId", conn);
-                adapter.DeleteCommand.Parameters.Add(":projectId", OracleDbType.Varchar2, 20, "ProjectID");
-
-                projectTable = new DataTable();
-                adapter.Fill(projectTable);
-                Project_dtg.DataSource = projectTable;
+                using (OracleCommand cmd = new OracleCommand("SELECT * FROM PROJECTS ORDER BY PROJECTID", conn))
+                {
+                    OracleDataAdapter adapter = new OracleDataAdapter(cmd);
+                    DataTable dt = new DataTable();
+                    adapter.Fill(dt);
+                    Project_dtg.DataSource = dt;
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error initializing data components: " + ex.Message);
+                MessageBox.Show("Error loading projects: " + ex.Message);
+            }
+            finally
+            {
+                if (conn.State == ConnectionState.Open)
+                    conn.Close();
             }
         }
 
-        private void LoadProjectData()
-        {
-            try
-            {
-                projectTable.Clear();
-                adapter.Fill(projectTable);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error loading project data: " + ex.Message);
-            }
-        }
 
         private void Add_btn_Click(object sender, EventArgs e)
         {
             try
             {
-                if (ValidateInput())
+                using (OracleCommand cmd = new OracleCommand("PROC_INSERT_PROJECT", conn))
                 {
-                    DataRow newRow = projectTable.NewRow();
-                    newRow["ProjectID"] = ProjectID_txt.Text;
-                    newRow["ProjectName"] = ProjectName_txt.Text;
-                    newRow["ProjectManagerID"] = ProjectManagerID_txt.Text;
-                    newRow["Status"] = Status_cmb.SelectedItem.ToString();
-                    newRow["StartDate"] = StartDate_dtp.Value;
-                    newRow["EndDate"] = EndDate_dtp.Value;
+                    conn.Open();
+                    cmd.CommandType = CommandType.StoredProcedure;
 
-                    projectTable.Rows.Add(newRow);
-                    adapter.Update(projectTable);
+                    // Output parameter
+                    OracleParameter projectIdParam = new OracleParameter("p_PROJECTID", OracleDbType.Int32);
+                    projectIdParam.Direction = ParameterDirection.Output;
+                    cmd.Parameters.Add(projectIdParam);
 
+                    // Input parameters
+                    cmd.Parameters.Add("p_PROJECTNAME", OracleDbType.Varchar2).Value = ProjectName_txt.Text;
+                    cmd.Parameters.Add("p_STARTDATE", OracleDbType.Date).Value = StartDate_dtp.Value;
+                    cmd.Parameters.Add("p_ENDDATE", OracleDbType.Date).Value = EndDate_dtp.Value;
+                    cmd.Parameters.Add("p_STATUS", OracleDbType.Varchar2).Value = Status_cmb.SelectedItem.ToString();
+                    cmd.Parameters.Add("p_PROJECTMANAGERID", OracleDbType.Int32).Value =
+                        Convert.ToInt32(ProjectManagerID_txt.Text);
+
+                    cmd.ExecuteNonQuery();
                     MessageBox.Show("Project added successfully!");
+                    LoadProjects();
                     ClearFields();
-                    LoadProjectData();
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error adding project: " + ex.Message);
+            }
+            finally
+            {
+                conn.Close();
             }
         }
 
@@ -123,60 +101,89 @@ namespace EmployeeManagementSystem
         {
             try
             {
-                if (ValidateInput())
+                
+                using (OracleCommand cmd = new OracleCommand("PROC_UPDATE_PROJECT", conn))
                 {
-                    DataRow[] rows = projectTable.Select($"ProjectID = '{ProjectID_txt.Text}'");
-                    if (rows.Length > 0)
-                    {
-                        DataRow row = rows[0];
-                        row["ProjectName"] = ProjectName_txt.Text;
-                        row["ProjectManagerID"] = ProjectManagerID_txt.Text;
-                        row["Status"] = Status_cmb.SelectedItem.ToString();
-                        row["StartDate"] = StartDate_dtp.Value;
-                        row["EndDate"] = EndDate_dtp.Value;
+                    conn.Open();
+                    cmd.CommandType = CommandType.StoredProcedure;
 
-                        adapter.Update(projectTable);
+                    cmd.Parameters.Add("p_PROJECTID", OracleDbType.Int32).Value =
+                        Convert.ToInt32(ProjectID_txt.Text);
+                    cmd.Parameters.Add("p_PROJECTNAME", OracleDbType.Varchar2).Value = ProjectName_txt.Text;
+                    cmd.Parameters.Add("p_STARTDATE", OracleDbType.Date).Value = StartDate_dtp.Value;
+                    cmd.Parameters.Add("p_ENDDATE", OracleDbType.Date).Value = EndDate_dtp.Value;
+                    cmd.Parameters.Add("p_STATUS", OracleDbType.Varchar2).Value = Status_cmb.SelectedItem.ToString();
+                    cmd.Parameters.Add("p_PROJECTMANAGERID", OracleDbType.Int32).Value =
+                        Convert.ToInt32(ProjectManagerID_txt.Text);
 
-                        MessageBox.Show("Project updated successfully!");
-                        ClearFields();
-                        LoadProjectData();
-                    }
+                    cmd.ExecuteNonQuery();
+                    MessageBox.Show("Project updated successfully!");
+                    LoadProjects();
+                    ClearFields();
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error updating project: " + ex.Message);
             }
+            finally
+            {
+                conn.Close();
+            }
         }
 
         private void Delete_btn_Click(object sender, EventArgs e)
         {
-            try
+            if (string.IsNullOrEmpty(ProjectID_txt.Text))
             {
-                if (string.IsNullOrWhiteSpace(ProjectID_txt.Text))
-                {
-                    MessageBox.Show("Please select a project to delete.");
-                    return;
-                }
+                MessageBox.Show("Please select a project to delete.");
+                return;
+            }
 
-                if (MessageBox.Show("Are you sure you want to delete this project?", "Confirm Delete",
-                    MessageBoxButtons.YesNo) == DialogResult.Yes)
+            if (MessageBox.Show("Are you sure you want to delete this project?", "Confirm Delete",
+                MessageBoxButtons.YesNo) == DialogResult.Yes)
+            {
+                try
                 {
-                    DataRow[] rows = projectTable.Select($"ProjectID = '{ProjectID_txt.Text}'");
-                    if (rows.Length > 0)
+                    using (OracleCommand cmd = new OracleCommand("BEGIN PROC_DELETE_PROJECT(:p_PROJECTID); END;", conn))
                     {
-                        rows[0].Delete();
-                        adapter.Update(projectTable);
+                        conn.Open();
 
+                        // Add parameters
+                        cmd.Parameters.Add(new OracleParameter("p_PROJECTID", OracleDbType.Int32)
+                        {
+                            Value = Convert.ToInt32(ProjectID_txt.Text)
+                        });
+
+                        cmd.ExecuteNonQuery();
                         MessageBox.Show("Project deleted successfully!");
+                        LoadProjects();
                         ClearFields();
-                        LoadProjectData();
                     }
                 }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error deleting project: " + ex.Message);
+                }
+                finally
+                {
+                    if (conn.State == ConnectionState.Open)
+                        conn.Close();
+                }
             }
-            catch (Exception ex)
+        }    
+
+        private void Project_dtg_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
             {
-                MessageBox.Show("Error deleting project: " + ex.Message);
+                DataGridViewRow row = Project_dtg.Rows[e.RowIndex];
+                ProjectID_txt.Text = row.Cells["PROJECTID"].Value.ToString();
+                ProjectName_txt.Text = row.Cells["PROJECTNAME"].Value.ToString();
+                StartDate_dtp.Value = Convert.ToDateTime(row.Cells["STARTDATE"].Value);
+                EndDate_dtp.Value = Convert.ToDateTime(row.Cells["ENDDATE"].Value);
+                Status_cmb.SelectedItem = row.Cells["STATUS"].Value.ToString();
+                ProjectManagerID_txt.Text = row.Cells["PROJECTMANAGERID"].Value.ToString();
             }
         }
 
@@ -185,48 +192,19 @@ namespace EmployeeManagementSystem
             ClearFields();
         }
 
-        private void Project_dtg_CellClick(object sender, DataGridViewCellEventArgs e)
-        {
-            if (e.RowIndex >= 0)
-            {
-                DataGridViewRow row = Project_dtg.Rows[e.RowIndex];
-                ProjectID_txt.Text = row.Cells["ProjectID"].Value.ToString();
-                ProjectName_txt.Text = row.Cells["ProjectName"].Value.ToString();
-                ProjectManagerID_txt.Text = row.Cells["ProjectManagerID"].Value.ToString();
-                Status_cmb.SelectedItem = row.Cells["Status"].Value.ToString();
-                StartDate_dtp.Value = Convert.ToDateTime(row.Cells["StartDate"].Value);
-                EndDate_dtp.Value = Convert.ToDateTime(row.Cells["EndDate"].Value);
-            }
-        }
-
         private void ClearFields()
         {
             ProjectID_txt.Clear();
             ProjectName_txt.Clear();
-            ProjectManagerID_txt.Clear();
-            Status_cmb.SelectedIndex = -1;
             StartDate_dtp.Value = DateTime.Now;
             EndDate_dtp.Value = DateTime.Now;
+            Status_cmb.SelectedIndex = -1;
+            ProjectManagerID_txt.Clear();
         }
 
-        private bool ValidateInput()
+        private void Project_Load(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(ProjectID_txt.Text) ||
-                string.IsNullOrWhiteSpace(ProjectName_txt.Text) ||
-                string.IsNullOrWhiteSpace(ProjectManagerID_txt.Text) ||
-                Status_cmb.SelectedIndex == -1)
-            {
-                MessageBox.Show("Please fill in all required fields.");
-                return false;
-            }
-
-            if (EndDate_dtp.Value < StartDate_dtp.Value)
-            {
-                MessageBox.Show("End date cannot be earlier than start date.");
-                return false;
-            }
-
-            return true;
+            ProjectID_txt.Enabled = false;
         }
     }
 }

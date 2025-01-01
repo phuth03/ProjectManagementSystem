@@ -8,7 +8,7 @@ namespace EmployeeManagementSystem
     public partial class MainForm : Form
     {
         // Database connection string
-        private readonly string connectionString = "Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=XE)));User Id=projectman;Password=Phu123;";
+        private readonly string connectionString = "Data Source=localhost:1521/XE;User Id=projectman;Password=Phu123;";
         private OracleConnection connection;
 
         public MainForm()
@@ -70,7 +70,9 @@ namespace EmployeeManagementSystem
                 {
                     connection.Close();
                 }
-                Application.Exit();
+                this.Hide();
+                Form1 form1 = new Form1();
+                form1.Show();
             }
         }
 
